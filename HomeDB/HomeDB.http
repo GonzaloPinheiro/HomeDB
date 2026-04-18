@@ -1,0 +1,6 @@
+@HomeDB_HostAddress = http://localhost:5279
+
+GET {{HomeDB_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

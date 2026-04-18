@@ -3,6 +3,34 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# =============================================
+# ASP.NET Core Web API (.NET 8)
+# =============================================
+
+# Environment-specific app settings (may contain secrets/connection strings)
+appsettings.Development.json
+appsettings.Staging.json
+appsettings.Production.json
+appsettings.Local.json
+
+# User secrets (dotnet user-secrets)
+**/secrets.json
+
+# ASP.NET Core Data Protection keys
+**/DataProtection-Keys/
+
+# Published output
+**/publish/
+
+# EF Core migrations SQL scripts (generated, not source)
+*.Designer.cs
+
+# .NET tool manifests (optional — remove if you commit them)
+# .config/dotnet-tools.json
+
+# HTTP client test files (REST Client for VS / .http files with sensitive data)
+# *.http
+
 # User-specific files
 *.rsuser
 *.suo

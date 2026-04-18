@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../HomeDB.Application/HomeDB.Application.csproj" />
+  <Project Path="../HomeDB.Domain/HomeDB.Domain.csproj" />
+  <Project Path="../HomeDB.Infrastructure/HomeDB.Infrastructure.csproj" />
+  <Project Path="HomeDB.csproj" />
+</Solution>
