@@ -1,9 +1,11 @@
 using HomeDB.Domain.Common;
 using HomeDB.Domain.Interfaces;
+using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Observability;
 using HomeDB.Infrastructure.Repositories;
 using HomeDB.Middlewares;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,8 +63,12 @@ builder.Services.AddRateLimiter(options =>
 
 
 // --------------------------- Connection string --------------------------- //
-//TODO Agregar DefaultEncrypted en appsettings.json 
-string connectionString = builder.Configuration.GetConnectionString("DefaultEncrypted")!; 
+//TODO Agregar DefaultEncrypted en appsettings.json
+string connectionString = builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!;
+
+// --------------------------- DbContext --------------------------- //
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // --------------------------- Logging y BackgroundService --------------------------- //
 builder.Services.AddSingleton<ILogEntryRepository>(provider => new LogEntryRepository(connectionString));
