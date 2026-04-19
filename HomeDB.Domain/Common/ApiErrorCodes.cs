@@ -15,6 +15,7 @@ namespace HomeDB.Domain.Common
         InvalidCredentials = 1006,
         UserAlreadyExists = 1007,
         UserNotFound = 1008,
+        RateLimitExceeded = 1009,
         InternalError = 9999
     }
 }

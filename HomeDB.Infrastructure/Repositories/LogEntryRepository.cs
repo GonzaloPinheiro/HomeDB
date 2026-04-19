@@ -1,8 +1,9 @@
 ﻿using HomeDB.Domain.Entities;
+using HomeDB.Domain.Interfaces;
 
 namespace HomeDB.Infrastructure.Repositories
 {
-    public class LogEntryRepository
+    public class LogEntryRepository : ILogEntryRepository
     {
         #region Constructores
         public LogEntryRepository(string encyptedConnection)

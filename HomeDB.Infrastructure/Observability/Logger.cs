@@ -1,5 +1,5 @@
 ﻿using HomeDB.Domain.Entities;
-using HomeDB.Infrastructure.Repositories;
+using HomeDB.Domain.Interfaces;
 
 namespace HomeDB.Infrastructure.Observability
 {
@@ -7,10 +7,10 @@ namespace HomeDB.Infrastructure.Observability
     {
         //Variables y ojetos
         private readonly ILogQueue _logQueue;
-        private readonly LogEntryRepository _logEntryRepository;
+        private readonly ILogEntryRepository _logEntryRepository;
 
         #region Constructores
-        public Logger(LogEntryRepository logEntryRepository, ILogQueue logQueue)
+        public Logger(ILogEntryRepository logEntryRepository, ILogQueue logQueue)
         {
             _logEntryRepository = logEntryRepository ?? throw new ArgumentNullException(nameof(logEntryRepository));
             _logQueue = logQueue ?? throw new ArgumentNullException(nameof(logQueue));
