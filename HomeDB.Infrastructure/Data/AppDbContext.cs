@@ -1,6 +1,5 @@
 ﻿using HomeDB.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using EFCore.NamingConventions;
 
 namespace HomeDB.Infrastructure.Data
 {

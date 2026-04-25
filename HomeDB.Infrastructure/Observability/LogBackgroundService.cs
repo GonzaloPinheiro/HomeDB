@@ -1,5 +1,5 @@
 ﻿using HomeDB.Domain.Entities;
-using HomeDB.Infrastructure.Repositories;
+using HomeDB.Domain.Interfaces;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 
@@ -8,14 +8,14 @@ namespace HomeDB.Infrastructure.Observability
     public class LogBackgroundService : BackgroundService, ILogQueue
     {
         private readonly Channel<LogEntry> _channel;
-        private readonly LogEntryRepository _repository;
+        private readonly ILogEntryRepository _repository;
 
         /// <summary>
         /// Crea la cola y recibe el repositorio para persistencia.
         /// </summary>
         /// <param name="repository"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public LogBackgroundService(LogEntryRepository repository)
+        public LogBackgroundService(ILogEntryRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
@@ -43,11 +43,11 @@ namespace HomeDB.Infrastructure.Observability
             }
 
             // Rellenar campos derivados aquí, fuera del POCO
-            entry.timeStamp = DateTimeOffset.UtcNow;
+            entry.TimeStamp = DateTimeOffset.UtcNow;
 
-            if (string.IsNullOrWhiteSpace(entry.correlationId))
+            if (string.IsNullOrWhiteSpace(entry.CorrelationId))
             {
-                entry.correlationId = OperationLogScope.CurrentCorrelationId ?? Guid.NewGuid().ToString();
+                entry.CorrelationId = OperationLogScope.CurrentCorrelationId ?? Guid.NewGuid().ToString();
             }
 
             // TryWrite no bloquea; si falla, la cola está llena y descartamos el log.

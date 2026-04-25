@@ -68,7 +68,8 @@ string connectionString = builder.Configuration.GetConnectionString("PostgreSQL_
 
 // --------------------------- DbContext --------------------------- //
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+           .UseSnakeCaseNamingConvention());
 
 // --------------------------- Logging y BackgroundService --------------------------- //
 builder.Services.AddSingleton<ILogEntryRepository>(provider => new LogEntryRepository(connectionString));

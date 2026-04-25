@@ -33,12 +33,12 @@ namespace HomeDB.Infrastructure.Observability
             //Fire-and-forget; aquí hago fire-and-forget para no bloquear registrando el logg.
             Task _ = _logger.AddAsync(new LogEntry
             {
-                level = "Information",
-                source = _source,
-                operation = _operation,
-                message = "Entering operation",
-                correlationId = _correlationId,
-                userId = _userId
+                Level = "Information",
+                Source = _source,
+                Operation = _operation,
+                Message = "Entering operation",
+                CorrelationId = _correlationId,
+                UserId = _userId
             });
         }
         #endregion
@@ -57,13 +57,13 @@ namespace HomeDB.Infrastructure.Observability
             //Creo el log de salida
             LogEntry exitEntry = new LogEntry
             {
-                level = "Information",
-                source = _source,
-                operation = _operation,
-                message = "Exiting operation",
-                correlationId = _correlationId,
-                userId = _userId,
-                durationMs = durationMs
+                Level = "Information",
+                Source = _source,
+                Operation = _operation,
+                Message = "Exiting operation",
+                CorrelationId = _correlationId,
+                UserId = _userId,
+                DurationMs = durationMs
             };
 
             //Guarda en DB el log

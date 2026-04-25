@@ -155,12 +155,12 @@ namespace HomeDB.Middlewares
         {
             await _logger.AddAsync(new LogEntry
             {
-                level = level,
-                source = "HomeDB.Middleware.ExceptionHandlerMiddleware",
-                operation = "InvokeAsync",
-                message = message,
-                correlationId = correlationId,
-                exception = ex.ToString()
+                Level = level,
+                Source = "HomeDB.Middleware.ExceptionHandlerMiddleware",
+                Operation = "InvokeAsync",
+                Message = message,
+                CorrelationId = correlationId,
+                Exception = ex.ToString()
             });
         }
 
