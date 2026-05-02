@@ -1,3 +1,4 @@
+using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeDB.Controllers;
@@ -6,6 +7,20 @@ namespace HomeDB.Controllers;
 [Route("health")]
 public class HealthController : ControllerBase
 {
+    private readonly Logger _logger;
+
+    public HealthController(Logger logger)
+    {
+        _logger = logger;
+    }
+
     [HttpGet]
-    public IActionResult Get() => Ok(new { status = "ok" });
+    public async Task<IActionResult> Get()
+    {
+        await using OperationLogScope scope = _logger.BeginScope(
+            source: nameof(HealthController),
+            operation: nameof(Get));
+
+        return Ok(new { status = "ok" });
+    }
 }

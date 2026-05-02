@@ -1,6 +1,4 @@
 ﻿
-using HomeDB.Domain.Common;
-
 namespace HomeDB.Domain.Entities
 {
     public class User

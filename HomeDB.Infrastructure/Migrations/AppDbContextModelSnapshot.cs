@@ -175,6 +175,49 @@ namespace HomeDB.Infrastructure.Migrations
                     b.ToTable("logs", (string)null);
                 });
 
+            modelBuilder.Entity("HomeDB.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
+
+                    b.Property<string>("ReplacedByToken")
+                        .HasColumnType("text")
+                        .HasColumnName("replaced_by_token");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_refresh_tokens_user_id");
+
+                    b.ToTable("refresh_tokens", (string)null);
+                });
+
             modelBuilder.Entity("HomeDB.Domain.Entities.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -313,6 +356,18 @@ namespace HomeDB.Infrastructure.Migrations
                     b.Navigation("Owner");
 
                     b.Navigation("ParentFolder");
+                });
+
+            modelBuilder.Entity("HomeDB.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("HomeDB.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_users_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HomeDB.Domain.Entities.UserRole", b =>

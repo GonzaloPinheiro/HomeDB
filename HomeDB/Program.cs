@@ -67,12 +67,12 @@ builder.Services.AddRateLimiter(options =>
 string connectionString = builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!;
 
 // --------------------------- DbContext --------------------------- //
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseNpgsql(connectionString)
            .UseSnakeCaseNamingConvention());
 
 // --------------------------- Logging y BackgroundService --------------------------- //
-builder.Services.AddSingleton<ILogEntryRepository>(provider => new LogEntryRepository(connectionString));
+builder.Services.AddSingleton<ILogEntryRepository, LogEntryRepository>();
 
 builder.Services.AddSingleton<LogBackgroundService>();
 
