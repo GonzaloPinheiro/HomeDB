@@ -85,9 +85,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 string connectionString = builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!;
 
 // --------------------------- DbContext --------------------------- //
+//Este se usa por el logger, que es singleton, y necesita un DbContextFactory para crear instancias de AppDbContext
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseNpgsql(connectionString)
            .UseSnakeCaseNamingConvention());
+
+//Este se usa para inyectar AppDbContext en los repositorios, que son scoped, y no necesitan un DbContextFactory
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString)
+           .UseSnakeCaseNamingConvention());
+
 
 // --------------------------- Logging y BackgroundService --------------------------- //
 builder.Services.AddSingleton<ILogEntryRepository, LogEntryRepository>();
