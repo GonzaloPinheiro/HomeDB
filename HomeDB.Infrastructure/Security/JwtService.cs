@@ -1,6 +1,7 @@
 ﻿
 using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
+using HomeDB.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,7 +11,7 @@ using System.Text;
 
 namespace HomeDB.Infrastructure.Security
 {
-    public class JwtService
+    public class JwtService : IJwtService
     {
         private readonly IConfiguration _config;
 
@@ -22,7 +23,7 @@ namespace HomeDB.Infrastructure.Security
                 Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            string role = user.UserRoles.FirstOrDefault()?.Role.RoleName ?? RolesList.User;
+            string role = user.UserRoles.FirstOrDefault()?.Role.RoleName ?? RolesList.User.ToString();
 
             Claim[] claims = new[]
             {

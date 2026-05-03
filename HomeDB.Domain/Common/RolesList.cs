@@ -1,9 +1,9 @@
 ﻿
 namespace HomeDB.Domain.Common
 {
-    public static class RolesList
+    public enum RolesList
     {
-        public const string Admin = "Admin";
-        public const string User = "User";
+        Admin = 1,
+        User = 2
     }
 }
