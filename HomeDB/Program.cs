@@ -1,11 +1,16 @@
+using HomeDB.Application.Services;
 using HomeDB.Domain.Common;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Observability;
 using HomeDB.Infrastructure.Repositories;
+using HomeDB.Infrastructure.Security;
 using HomeDB.Middlewares;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 
-//TODO Revisar la implementación, falta implemntar jwt.
+//---------------------------RateLimiter---------------------------//
 builder.Services.AddRateLimiter(options =>
 {
     // Global: 100 req/min por IP
@@ -60,7 +65,20 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
-
+//---------------------------JWT Authentication---------------------------//
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
 
 // --------------------------- Connection string --------------------------- //
 //TODO Agregar DefaultEncrypted en appsettings.json
@@ -90,6 +108,18 @@ builder.Services.AddSingleton<Logger>(sp =>
     return new Logger(repo, logQueue);
 });
 
+// --------------------------- Repositories --------------------------- //
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+//---------------------------HelpersSeguridad + JWT---------------------------//
+builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// --------------------------- AuthService --------------------------- //
+builder.Services.AddScoped<AuthService>();
+
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -115,6 +145,7 @@ else//Fuerza a los navegadores a usar una conexión segura https(solo se aplica 
 //Redirige cualquier petición http a https
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 //Activa el rate limiting
