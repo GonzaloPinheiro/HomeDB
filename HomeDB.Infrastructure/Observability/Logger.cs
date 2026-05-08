@@ -44,7 +44,8 @@ namespace HomeDB.Infrastructure.Observability
         /// <param name="correlationId"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public OperationLogScope BeginScope(string source, string operation, string correlationId = null, string userId = null)
+        public OperationLogScope BeginScope(string source, string operation, string correlationId = null, 
+                                            string userId = null)
         {
             OperationLogScope scope = new OperationLogScope(this, source, operation, correlationId, userId);
             return scope;

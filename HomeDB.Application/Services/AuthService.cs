@@ -37,7 +37,7 @@ namespace HomeDB.Application.Services
         /// <exception cref="UserAlreadyExistsException"></exception>
         public async Task<UserDto> RegisterAsync(RegisterDto dto, CancellationToken cToken)
         {
-            //Comprobar si el username ya existe → si sí, lanzar UserAlreadyExistsException
+            //Comprobar si el username ya existe
             if (await _userRepository.UsernameExistsAsync(dto.Username, cToken))
                 throw new UserAlreadyExistsException(dto.Username);
 
