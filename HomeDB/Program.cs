@@ -81,7 +81,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // --------------------------- Connection string --------------------------- //
-//TODO Agregar DefaultEncrypted en appsettings.json
 string connectionString = builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!;
 
 // --------------------------- DbContext --------------------------- //

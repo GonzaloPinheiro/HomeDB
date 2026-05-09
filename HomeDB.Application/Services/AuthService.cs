@@ -133,7 +133,7 @@ namespace HomeDB.Application.Services
             //Si no existe devolver 403 y marcarlo con un log
             if (refreshToken == null || refreshToken.IsRevoked || refreshToken.ExpiresAt <= DateTime.UtcNow)
                 // TODO: log de seguridad al administrador cuando esté implementado el logger
-                throw new InvalidProgramException();
+                throw new InvalidRefreshTokenException();
 
             //Crear el nuevo refresh token
             string newRefreshTokenString = _jwtService.GenerateRefreshToken();
