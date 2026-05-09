@@ -22,8 +22,8 @@ namespace HomeDB.Infrastructure.Data
 
             //Agregar datos iniciales para los roles
             modelBuilder.Entity<Role>().HasData(
-                new Role { Id = 1, RoleName = RolesList.Admin },
-                new Role { Id = 2, RoleName = RolesList.User }
+                new Role { Id = 1, RoleName = RolesList.Admin.ToString() },
+                new Role { Id = 2, RoleName = RolesList.User.ToString() }
             );
         }
     }

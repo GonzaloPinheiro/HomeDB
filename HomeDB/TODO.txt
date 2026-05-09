@@ -1,0 +1,1 @@
+Hacer que cuando se haga login, se invalide el token antiguo?
