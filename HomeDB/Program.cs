@@ -5,6 +5,7 @@ using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Observability;
 using HomeDB.Infrastructure.Repositories;
 using HomeDB.Infrastructure.Security;
+using HomeDB.Infrastructure.Storage;
 using HomeDB.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -117,6 +118,12 @@ builder.Services.AddSingleton<Logger>(sp =>
 // --------------------------- Repositories --------------------------- //
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IFileItemRepository, FileItemRepository>();
+
+// --------------------------- Storage --------------------------- //
+builder.Services.Configure<StorageOptions>(
+    builder.Configuration.GetSection("Storage"));
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 //---------------------------HelpersSeguridad + JWT---------------------------//
 builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
@@ -124,6 +131,8 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 
 // --------------------------- AuthService --------------------------- //
 builder.Services.AddScoped<AuthService>();
+// --------------------------- FilesService --------------------------- //
+builder.Services.AddScoped<FilesService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

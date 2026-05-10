@@ -22,24 +22,22 @@ namespace HomeDB.Controllers
 
         /// <summary>
         /// Registra un nuevo usuario en el sistema.
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
+        /// </summary>s
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> RegisterAsync(RegisterDto dto, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
-            string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            //string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            int userId = GetUserId();
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
                 source: "HomeDB.Controllers.AuthController",
                 operation: "RegisterAsync()",
                 correlationId: correlationId,
-                userId: username);
+                userId: userId.ToString());
 
             //Registrar el usuario
             UserDto result = await _authService.RegisterAsync(dto, cToken);
@@ -51,23 +49,21 @@ namespace HomeDB.Controllers
         /// <summary>
         /// Autentica un usuario y devuelve un access token y un refresh token
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> LoginAsync(LoginDto dto, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
-            string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            //string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            int userId = GetUserId();
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
                 source: "HomeDB.Controllers.AuthController",
                 operation: "LoginAsync()",
                 correlationId: correlationId,
-                userId: username);
+                userId: userId.ToString());
 
             //Registrar el usuario
             TokenResponseDto result = await _authService.LoginAsync(dto, cToken);
@@ -80,23 +76,21 @@ namespace HomeDB.Controllers
         /// <summary>
         /// Renueva el access token usando un refresh token válido.
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         [HttpPost]
         [Route("refreshToken")]
         public async Task<IActionResult> RefreshTokenAsync(RefreshRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
-            string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            //string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            int userId = GetUserId();
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
                 source: "HomeDB.Controllers.AuthController",
                 operation: "RefreshTokenAsync()",
                 correlationId: correlationId,
-                userId: username);
+                userId: userId.ToString());
 
             //Registrar el usuario
             TokenResponseDto result = await _authService.RefreshAsync(dto, cToken);
@@ -108,9 +102,6 @@ namespace HomeDB.Controllers
         /// <summary>
         /// Invalida el refresh token del usuario cerrando la sesión.
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         [HttpPost]
         [Authorize]
         [Route("logout")]
@@ -118,14 +109,15 @@ namespace HomeDB.Controllers
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
-            string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            //string username = User.Identity?.Name ?? "Unknown"; // username del JWT
+            int userId = GetUserId();
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
                 source: "HomeDB.Controllers.AuthController",
                 operation: "LogoutAsync()",
                 correlationId: correlationId,
-                userId: username);
+                userId: userId.ToString());
 
             //Registrar el usuario
             await _authService.LogoutAsync(dto, cToken);

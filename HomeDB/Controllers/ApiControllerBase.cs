@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HomeDB.Controllers
 {
@@ -11,6 +12,14 @@ namespace HomeDB.Controllers
         protected string GetCorrelationId()
         {
             return HttpContext.Items["CorrelationId"]!.ToString()!;
+        }
+
+        /// <summary>
+        /// Obtiene el userId del token JWT del request actual
+        /// </summary>
+        protected int GetUserId()
+        {
+            return int.Parse(User.FindFirstValue("userId")!);
         }
     }
 }
