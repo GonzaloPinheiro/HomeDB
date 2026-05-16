@@ -8,7 +8,7 @@ using HomeDB.Infrastructure.Security;
 using HomeDB.Infrastructure.Storage;
 using HomeDB.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -134,6 +134,9 @@ builder.Services.AddScoped<AuthService>();
 // --------------------------- FilesService --------------------------- //
 builder.Services.AddScoped<FilesService>();
 
+// --------------------------- Límite de tamaño de fichero --------------------------- //
+builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 524288000);
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 524288000);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

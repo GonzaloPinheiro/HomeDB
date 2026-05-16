@@ -26,5 +26,12 @@ namespace HomeDB.Domain.Interfaces
         /// <param name="storedName"></param>
         /// <returns></returns>
         bool Exists(string storedName);
+
+        /// <summary>
+        /// Devuelve la ruta completa del archivo en disco.
+        /// </summary>
+        /// <param name="storedName"></param>
+        /// <returns></returns>
+        string GetFilePath(string storedName);
     }
 }

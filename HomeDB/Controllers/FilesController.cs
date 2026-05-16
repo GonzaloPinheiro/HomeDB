@@ -52,5 +52,28 @@ namespace HomeDB.Controllers
             //Devolver resultado (200)
             return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
         }
+
+        [Authorize]
+        [HttpGet]
+        [Route("{id}/downloadFile")]
+        public async Task<IActionResult> DownloadFileAsync(int id, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "DownloadFileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Obtener los datos del archivo para servirlo
+            DownloadFileResponseDto result = await _filesService.DownloadFileAsync(id, userId, cToken);
+
+            //Devolver el archivo (200)
+            return PhysicalFile(result.FilePath, result.ContentType, result.FileName);
+        }
     }
 }

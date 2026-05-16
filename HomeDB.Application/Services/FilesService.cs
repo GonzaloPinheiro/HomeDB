@@ -68,5 +68,29 @@ namespace HomeDB.Application.Services
             }
 
         }
+
+        public async Task<DownloadFileResponseDto> DownloadFileAsync(int fileId,int userId, CancellationToken cToken)
+        {
+            // Buscar el FileItem por su Id
+            FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
+
+            //Si no existe el archivo, lanzar una excepción
+            if (fileItem == null)
+                throw new FileNotFoundException("Archivo no encontrado en la base de datos.");
+
+            //Verificar que el archivo pertenece al usuario que lo solicita.
+            if(fileItem.OwnerId != userId)
+                throw new UnauthorizedAccessException("No tienes permiso para acceder a este archivo.");
+
+            //Verificar que el archivo existe en el disco.
+            if (!_fileStorageService.Exists(fileItem.StoredName))
+                throw new FileNotFoundException("Archivo no encontrado en el almacenamiento.");
+
+            //Obtener la ruta del archivo en el disco usando el StoredName
+            string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
+
+            //Todo Ok
+            return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+        }
     }
 }

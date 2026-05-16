@@ -1,6 +1,7 @@
 ﻿using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace HomeDB.Infrastructure.Repositories
 {
@@ -19,6 +20,14 @@ namespace HomeDB.Infrastructure.Repositories
         public async Task AddAsync(FileItem fileItem, CancellationToken cToken)
         {
             await _context.FileItems.AddAsync(fileItem, cToken);
+        }
+
+        //Busca el archivo por su id
+        public async Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken)
+        {
+            return await _context.FileItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.Id == id, cToken);
         }
 
         //Persistir los cambios en la base de datos

@@ -14,6 +14,14 @@ namespace HomeDB.Domain.Interfaces
         Task AddAsync(FileItem fileItem, CancellationToken cToken);
 
         /// <summary>
+        /// Busca un FileItem por su Id. Retorna null si no se encuentra
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="cToken"></param>
+        /// <returns></returns>
+        Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken);
+
+        /// <summary>
         /// Confirma los cambios sobre la base de datos
         /// </summary>
         /// <param name="cToken"></param>
