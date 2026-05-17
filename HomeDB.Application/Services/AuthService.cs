@@ -3,6 +3,8 @@ using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 
 namespace HomeDB.Application.Services
 {

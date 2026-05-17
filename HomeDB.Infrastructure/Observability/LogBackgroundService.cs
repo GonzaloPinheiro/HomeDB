@@ -1,7 +1,7 @@
 ﻿using HomeDB.Domain.Entities;
-using HomeDB.Domain.Interfaces;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
+using HomeDB.Domain.Interfaces.Repositories;
 
 namespace HomeDB.Infrastructure.Observability
 {

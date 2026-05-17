@@ -1,6 +1,6 @@
 ﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
-using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

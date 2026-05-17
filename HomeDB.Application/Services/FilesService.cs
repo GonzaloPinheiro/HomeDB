@@ -1,7 +1,8 @@
 ﻿using HomeDB.Application.DTOs.Files;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
-using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 
 namespace HomeDB.Application.Services
 {

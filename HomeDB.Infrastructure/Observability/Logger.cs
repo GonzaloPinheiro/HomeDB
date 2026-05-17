@@ -1,5 +1,5 @@
 ﻿using HomeDB.Domain.Entities;
-using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Repositories;
 
 namespace HomeDB.Infrastructure.Observability
 {

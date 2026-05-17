@@ -1,6 +1,6 @@
 using HomeDB.Domain.Entities;
 
-namespace HomeDB.Domain.Interfaces
+namespace HomeDB.Domain.Interfaces.Repositories
 {
     public interface ILogEntryRepository
     {

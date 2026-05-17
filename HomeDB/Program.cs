@@ -1,6 +1,8 @@
 using HomeDB.Application.Services;
 using HomeDB.Domain.Common;
 using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Observability;
 using HomeDB.Infrastructure.Repositories;

@@ -1,5 +1,4 @@
-﻿
-namespace HomeDB.Domain.Interfaces
+﻿namespace HomeDB.Domain.Interfaces.Services
 {
     public interface IFileStorageService
     {
