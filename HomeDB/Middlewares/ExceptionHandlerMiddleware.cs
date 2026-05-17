@@ -66,7 +66,7 @@ namespace HomeDB.Middlewares
 
                 var (statusCode, errorMessage, errorCode, logLevel, logMessage) = ex switch
                 {
-                    HomeDB.Domain.Exceptions.FileNotFoundException filenfe => (
+                    FileItemNotFoundException filenfe => (
                         StatusCodes.Status404NotFound,
                         filenfe.Message,
                         ApiErrorCodes.FileNotFound,
@@ -112,6 +112,13 @@ namespace HomeDB.Middlewares
                         ApiErrorCodes.InvalidCredentials,
                         "Warning",
                         $"Credenciales inválidas. Path: {path}, Method: {method}"
+                    ),
+                    UnauthorizedException ue => (
+                        StatusCodes.Status403Forbidden,
+                        ue.Message,
+                        ApiErrorCodes.Unauthorized,
+                        "Warning",
+                        $"Acceso no autorizado. Path: {path}, Method: {method}"
                     ),
 
                     UnauthorizedAccessException uae => (

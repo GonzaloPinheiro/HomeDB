@@ -22,6 +22,14 @@ namespace HomeDB.Domain.Interfaces
         Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken);
 
         /// <summary>
+        /// Elimina el fileItem recibido como parámetro de la base de datos
+        /// </summary>
+        /// <param name="fileItem"></param>
+        /// <param name="cToken"></param>
+        /// <returns></returns>
+        void DeleteFile(FileItem fileItem);
+
+        /// <summary>
         /// Confirma los cambios sobre la base de datos
         /// </summary>
         /// <param name="cToken"></param>

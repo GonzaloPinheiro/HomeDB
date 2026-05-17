@@ -30,6 +30,13 @@ namespace HomeDB.Infrastructure.Repositories
                 .FirstOrDefaultAsync(f => f.Id == id, cToken);
         }
 
+        //Elimina un archivo de la base de datos
+        public void DeleteFile(FileItem fileItem)
+        {
+            //Eliminarlo si lo encuentra
+            _context.FileItems.Remove(fileItem);
+        }
+
         //Persistir los cambios en la base de datos
         public async Task SaveChangesAsync(CancellationToken cToken)
         {

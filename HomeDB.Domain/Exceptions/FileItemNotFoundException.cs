@@ -4,9 +4,9 @@ namespace HomeDB.Domain.Exceptions
     /// <summary>
     /// Archivo no encontrado en base de datos
     /// </summary>
-    public class FileNotFoundException : Exception
+    public class FileItemNotFoundException : Exception
     {
-        public FileNotFoundException(int id)
+        public FileItemNotFoundException(int id)
             : base($"File with id {id} was not found.") { }
     }
 }

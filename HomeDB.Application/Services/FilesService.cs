@@ -1,5 +1,6 @@
 ﻿using HomeDB.Application.DTOs.Files;
 using HomeDB.Domain.Entities;
+using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces;
 
 namespace HomeDB.Application.Services
@@ -91,6 +92,32 @@ namespace HomeDB.Application.Services
 
             //Todo Ok
             return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+        }
+
+        public async Task<DeleteFileResponseDto> DeleteFileAsync(int fileId, int userId, CancellationToken cToken)
+        {
+            //Buscar si existe el archivo recibido por su id en DB
+            FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
+
+            //Si no existe el archivo, lanzar excepción
+            if(fileItem == null)
+                throw new FileItemNotFoundException(fileId);
+
+            //Verificar que el archivo pertenece al usuario que lo solicita.
+            if (fileItem.OwnerId != userId)
+                throw new UnauthorizedException(userId);
+
+            //Eliminar el archivo del disco usando el StoredName
+            await _fileStorageService.DeleteAsync(fileItem.StoredName, cToken);
+
+            //Eliminar el registro del archivo en la base de datos
+            _fileItemRepository.DeleteFile(fileItem);
+
+            //Persistir los cambios en la base de datos
+            await _fileItemRepository.SaveChangesAsync(cToken);
+
+            //Todo Ok
+            return new DeleteFileResponseDto(fileId, fileItem.FileName);
         }
     }
 }

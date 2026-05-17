@@ -75,5 +75,28 @@ namespace HomeDB.Controllers
             //Devolver el archivo (200)
             return PhysicalFile(result.FilePath, result.ContentType, result.FileName);
         }
+
+        [Authorize]
+        [HttpDelete]
+        [Route("{id}/deleteFile")]
+        public async Task<IActionResult> DeleteFileAsync(int id, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "DeleteFileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Eliminar el archivo
+            DeleteFileResponseDto result = await _filesService.DeleteFileAsync(id, userId, cToken);
+
+            //Devolver resultado (200)
+            return Ok(ApiObjResponse<DeleteFileResponseDto>.Success(result));
+        }
     }
 }

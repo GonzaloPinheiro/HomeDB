@@ -10,4 +10,6 @@ namespace HomeDB.Application.DTOs.Files
 
     public record DownloadFileResponseDto(string FilePath, string FileName, string ContentType);
 
+    public record DeleteFileResponseDto(int FileId, string FileName);
+
 }

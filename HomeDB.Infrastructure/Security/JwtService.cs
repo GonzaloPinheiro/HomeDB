@@ -1,5 +1,4 @@
-﻿
-using HomeDB.Domain.Common;
+﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
