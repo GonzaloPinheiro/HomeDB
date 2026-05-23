@@ -21,6 +21,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+//---------------------------CORS---------------------------//
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 
 //---------------------------RateLimiter---------------------------//
 builder.Services.AddRateLimiter(options =>
@@ -164,6 +175,8 @@ else//Fuerza a los navegadores a usar una conexión segura https(solo se aplica 
 
 //Redirige cualquier petición http a https
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendDev");
 
 app.UseAuthentication();
 app.UseAuthorization();
