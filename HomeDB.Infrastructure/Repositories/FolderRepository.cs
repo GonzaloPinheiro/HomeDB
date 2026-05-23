@@ -45,6 +45,18 @@ namespace HomeDB.Infrastructure.Repositories
             _context.FolderItems.Remove(folderItem);
         }
 
+        //Comprueba si un folder tiene archivos asociados en la base de datos.
+        public Task<bool> HasFilesAsync(int folderId, CancellationToken cToken)
+        {
+            return _context.FileItems.AnyAsync(f => f.FolderId == folderId, cToken);
+        }
+
+        //Comprueba si un folder tiene subcarpetas asociadas en la base de datos.
+        public Task<bool> HasSubfoldersAsync(int folderId, CancellationToken cToken)
+        {
+            return _context.FolderItems.AnyAsync(f => f.ParentFolderId == folderId, cToken);
+        }
+
         //Persiste los cambios realizados en la base de datos.
         public async Task SaveChangesAsync(CancellationToken cToken)
         {

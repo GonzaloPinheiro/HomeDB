@@ -79,7 +79,7 @@ namespace HomeDB.Application.Services
         }
 
         //Elimina una carpeta específica de un usuario.
-        public async Task DeleteFolderAsync(int folderId, int ownerId, CancellationToken cToken)
+        public async Task<DeleteFolderResponseDto> DeleteFolderAsync(int folderId, int ownerId, CancellationToken cToken)
         {
             //Obtener el folder a eliminar
             FolderItem? folderItem = await _folderRepository.GetByIdAsync(folderId, cToken);
@@ -89,13 +89,20 @@ namespace HomeDB.Application.Services
                 throw new FolderNotFoundException(folderId);
 
             //Comrpobar que esté vacío
-            //TODO
-
+            if (await _folderRepository.HasFilesAsync(folderId, cToken) ||
+                await _folderRepository.HasSubfoldersAsync(folderId, cToken))
+            {
+                throw new FolderNotEmptyException(folderId);
+            }
+               
             //Eliminar el folder de la base de datos
             await _folderRepository.DeleteAsync(folderItem, cToken);
 
             //Persistir los cambios en la base de datos
             await _folderRepository.SaveChangesAsync(cToken);
+
+            //Devolver el folder eliminado como respuesta
+            return new DeleteFolderResponseDto(folderItem.Id, folderItem.Name);
         }
     }
 }

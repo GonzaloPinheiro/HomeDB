@@ -132,6 +132,7 @@ builder.Services.AddSingleton<Logger>(sp =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IFileItemRepository, FileItemRepository>();
+builder.Services.AddScoped<IFolderRepository, FolderRepository>();
 
 // --------------------------- Storage --------------------------- //
 builder.Services.Configure<StorageOptions>(
@@ -146,6 +147,8 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<AuthService>();
 // --------------------------- FilesService --------------------------- //
 builder.Services.AddScoped<FilesService>();
+// --------------------------- FoldersService --------------------------- //
+builder.Services.AddScoped<FoldersService>();
 
 // --------------------------- Límite de tamaño de fichero --------------------------- //
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 524288000);

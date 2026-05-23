@@ -74,6 +74,14 @@ namespace HomeDB.Middlewares
                         $"Archivo no encontrado. Path: {path}, Method: {method}"
                     ),
 
+                    ParentFolderNotFoundException pfnt =>(
+                        StatusCodes.Status404NotFound,
+                        pfnt.Message,
+                        ApiErrorCodes.FolderNotFound,
+                        "Warning",
+                        $"Carpeta padre no encontrada. Path: {path}, Method: {method}"
+                    ),
+
                     FolderNotFoundException foldnte => (
                         StatusCodes.Status404NotFound,
                         foldnte.Message,

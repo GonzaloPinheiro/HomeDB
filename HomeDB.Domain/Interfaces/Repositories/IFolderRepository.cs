@@ -43,5 +43,8 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <param name="cToken"></param>
         /// <returns></returns>
         Task SaveChangesAsync(CancellationToken cToken);
+
+        Task<bool> HasFilesAsync(int folderId, CancellationToken cToken);
+        Task<bool> HasSubfoldersAsync(int folderId, CancellationToken cToken);
     }
 }
