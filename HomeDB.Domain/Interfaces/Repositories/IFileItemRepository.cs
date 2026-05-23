@@ -21,6 +21,12 @@ namespace HomeDB.Domain.Interfaces.Repositories
         Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken);
 
         /// <summary>
+        /// Retorna los archivos del usuario en la carpeta indicada.
+        /// Sin folderId devuelve los archivos de la raíz.
+        /// </summary>
+        Task<IEnumerable<FileItem>> GetByOwnerAndFolderAsync(int ownerId, int? folderId, CancellationToken cToken);
+
+        /// <summary>
         /// Elimina el fileItem recibido como parámetro de la base de datos
         /// </summary>
         /// <param name="fileItem"></param>

@@ -19,6 +19,29 @@ namespace HomeDB.Controllers
             _filesService = filesService;
         }
 
+        [HttpGet]
+        [Authorize]
+        [Route("listFiles")]
+        public async Task<IActionResult> ListFilesAsync([FromQuery] int? folderId, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "ListFilesAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Obtener la lista de archivos de la carpeta (o raíz si folderId es null)
+            IEnumerable<GetFileItemDto> files = await _filesService.ListFilesAsync(userId, folderId, cToken);
+
+            //Devolver resultado (200)
+            return Ok(ApiObjResponse<IEnumerable<GetFileItemDto>>.Success(files));
+        }
+
         [Authorize]
         [HttpPost]
         [Route("uploadFile")]

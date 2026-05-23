@@ -71,7 +71,7 @@ namespace HomeDB.Application.Services
 
         }
 
-        public async Task<DownloadFileResponseDto> DownloadFileAsync(int fileId,int userId, CancellationToken cToken)
+        public async Task<DownloadFileResponseDto> DownloadFileAsync(int fileId, int userId, CancellationToken cToken)
         {
             // Buscar el FileItem por su Id
             FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
@@ -81,7 +81,7 @@ namespace HomeDB.Application.Services
                 throw new FileNotFoundException("Archivo no encontrado en la base de datos.");
 
             //Verificar que el archivo pertenece al usuario que lo solicita.
-            if(fileItem.OwnerId != userId)
+            if (fileItem.OwnerId != userId)
                 throw new UnauthorizedAccessException("No tienes permiso para acceder a este archivo.");
 
             //Verificar que el archivo existe en el disco.
@@ -101,7 +101,7 @@ namespace HomeDB.Application.Services
             FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
 
             //Si no existe el archivo, lanzar excepción
-            if(fileItem == null)
+            if (fileItem == null)
                 throw new FileItemNotFoundException(fileId);
 
             //Verificar que el archivo pertenece al usuario que lo solicita.
@@ -119,6 +119,22 @@ namespace HomeDB.Application.Services
 
             //Todo Ok
             return new DeleteFileResponseDto(fileId, fileItem.FileName);
+        }
+
+        public async Task<IEnumerable<GetFileItemDto>> ListFilesAsync(int ownerId, int? folderId, CancellationToken cToken)
+        {
+            //Obtener la lista de archivos del usuario y carpeta especificados
+            IEnumerable<FileItem> files = await _fileItemRepository.GetByOwnerAndFolderAsync(ownerId, folderId, cToken);
+
+            //Mapear la lista de FileItem a GetFileItemDto
+            return files.Select(f => new GetFileItemDto(
+                f.Id,
+                f.FileName,
+                f.SizeBytes,
+                f.ContentType,
+                f.FolderId,
+                f.UploadedAt
+            ));
         }
     }
 }

@@ -30,6 +30,19 @@ namespace HomeDB.Infrastructure.Repositories
                 .FirstOrDefaultAsync(f => f.Id == id, cToken);
         }
 
+        //Busca los archivos por su propietario y carpeta (si se especifica)
+        public async Task<IEnumerable<FileItem>> GetByOwnerAndFolderAsync(int ownerId, int? folderId, CancellationToken cToken)
+        {
+            IQueryable<FileItem> query = _context.FileItems
+                .Where(f => f.OwnerId == ownerId);
+
+            query = folderId.HasValue
+                ? query.Where(f => f.FolderId == folderId.Value)
+                : query.Where(f => f.FolderId == null);
+
+            return await query.AsNoTracking().ToListAsync(cToken);
+        }
+
         //Elimina un archivo de la base de datos
         public void DeleteFile(FileItem fileItem)
         {
