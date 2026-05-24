@@ -139,6 +139,10 @@ builder.Services.Configure<StorageOptions>(
     builder.Configuration.GetSection("Storage"));
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
+//---------------------------CurrentUserService---------------------------//
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
 //---------------------------HelpersSeguridad + JWT---------------------------//
 builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
 builder.Services.AddScoped<IJwtService, JwtService>();
