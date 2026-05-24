@@ -14,6 +14,7 @@ namespace HomeDB.Infrastructure.Data
         public DbSet<FolderItem> FolderItems => Set<FolderItem>(); //Tabla con elementos de carpeta
         public DbSet<FileItem> FileItems => Set<FileItem>(); //Tabla con elementos de archivo
         public DbSet<LogEntry> Logs => Set<LogEntry>(); //Tabla para logs de la aplicación
+        public DbSet<AuditLogEntry> AuditEntries => Set<AuditLogEntry>(); //Tabla para auditoría de cambios
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>(); //Tabla para tokens de actualización
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

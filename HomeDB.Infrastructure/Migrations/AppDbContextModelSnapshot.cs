@@ -22,6 +22,55 @@ namespace HomeDB.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("HomeDB.Domain.Entities.AuditLogEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text")
+                        .HasColumnName("ip_address");
+
+                    b.Property<int?>("ResourceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceName")
+                        .HasColumnType("text")
+                        .HasColumnName("resource_name");
+
+                    b.Property<string>("ResourceType")
+                        .HasColumnType("text")
+                        .HasColumnName("resource_type");
+
+                    b.Property<DateTime>("TimeStamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("time_stamp");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("username");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_entries");
+
+                    b.ToTable("audit_entries", (string)null);
+                });
+
             modelBuilder.Entity("HomeDB.Domain.Entities.FileItem", b =>
                 {
                     b.Property<int>("Id")
