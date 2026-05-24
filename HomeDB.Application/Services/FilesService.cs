@@ -1,6 +1,8 @@
 ﻿using HomeDB.Application.DTOs.Files;
+using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
+using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 
@@ -10,11 +12,13 @@ namespace HomeDB.Application.Services
     {
         private readonly IFileStorageService _fileStorageService;
         private readonly IFileItemRepository _fileItemRepository;
+        private readonly AuditService _auditService;
 
-        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository)
+        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository, AuditService auditService)
         {
             _fileStorageService = fileStorageService;
             _fileItemRepository = fileItemRepository;
+            _auditService = auditService;
         }
 
         public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request,
@@ -59,6 +63,9 @@ namespace HomeDB.Application.Services
                     fileItem.UploadedAt
                 );
 
+                //AuditLog
+                await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
                 //Todo Ok
                 return response;
             }
@@ -91,6 +98,9 @@ namespace HomeDB.Application.Services
             //Obtener la ruta del archivo en el disco usando el StoredName
             string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
 
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.DownloadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
             //Todo Ok
             return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
         }
@@ -116,6 +126,9 @@ namespace HomeDB.Application.Services
 
             //Persistir los cambios en la base de datos
             await _fileItemRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.DeleteFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
 
             //Todo Ok
             return new DeleteFileResponseDto(fileId, fileItem.FileName);

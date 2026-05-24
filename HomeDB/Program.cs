@@ -153,6 +153,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<FilesService>();
 // --------------------------- FoldersService --------------------------- //
 builder.Services.AddScoped<FoldersService>();
+// --------------------------- AuditLog --------------------------- //
+builder.Services.AddScoped<IAuditLogRepository, AuditLogEntryRepository>();
+builder.Services.AddScoped<AuditService>();
 
 // --------------------------- Límite de tamaño de fichero --------------------------- //
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 524288000);

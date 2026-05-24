@@ -21,5 +21,14 @@ namespace HomeDB.Controllers
         {
             return int.Parse(User.FindFirstValue("userId")!);
         }
+
+        /// <summary>
+        /// Obtiene la ip address del request actual
+        /// </summary>
+        /// <returns></returns>
+        protected string GetIpAddress()
+        {
+            return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        }
     }
 }

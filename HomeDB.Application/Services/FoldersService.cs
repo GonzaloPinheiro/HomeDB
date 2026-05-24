@@ -1,4 +1,5 @@
 ﻿using HomeDB.Application.DTOs;
+using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces.Repositories;
@@ -9,11 +10,13 @@ namespace HomeDB.Application.Services
     {
         //Variables y objetos globales
         private readonly IFolderRepository _folderRepository;
+        private readonly AuditService _auditService;
 
         //Constructores
-        public FoldersService(IFolderRepository folderRepository)
+        public FoldersService(IFolderRepository folderRepository, AuditService auditService)
         { 
             _folderRepository = folderRepository;
+            _auditService = auditService;
         }
 
         //Crea una carpeta para un usuario específico.
@@ -45,6 +48,9 @@ namespace HomeDB.Application.Services
 
             //Persistir los cambios en la base de datos
             await _folderRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.CreateFolder, nameof(FolderItem), newFolder.Id, newFolder.Name, cToken);
 
             //Retornar el nuevo folder creado como respuesta
             return new CreateFolderResponseDto
@@ -100,6 +106,9 @@ namespace HomeDB.Application.Services
 
             //Persistir los cambios en la base de datos
             await _folderRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.DeleteFolder, nameof(FolderItem), folderItem.Id, folderItem.Name, cToken);
 
             //Devolver el folder eliminado como respuesta
             return new DeleteFolderResponseDto(folderItem.Id, folderItem.Name);

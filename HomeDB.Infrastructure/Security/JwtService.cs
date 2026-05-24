@@ -26,10 +26,10 @@ namespace HomeDB.Infrastructure.Security
 
             Claim[] claims = new[]
             {
-            new Claim("userId", user.Id.ToString()),
-            new Claim("username", user.Username),
-            new Claim(ClaimTypes.Role, role)
-        };
+                new Claim("userId", user.Id.ToString()),
+                new Claim("username", user.Username),
+                new Claim(ClaimTypes.Role, role)
+            };
 
             JwtSecurityToken token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],

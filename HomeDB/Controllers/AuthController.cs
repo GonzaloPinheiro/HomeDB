@@ -29,6 +29,7 @@ namespace HomeDB.Controllers
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
+            string ipAddress = GetIpAddress();
             string username = User.Identity?.Name ?? "Unknown";
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
@@ -39,7 +40,7 @@ namespace HomeDB.Controllers
                 userId: username);
 
             //Registrar el usuario
-            UserDto result = await _authService.RegisterAsync(dto, cToken);
+            UserDto result = await _authService.RegisterAsync(dto, ipAddress, cToken);
 
             //Devolver resultado (201)
             return StatusCode(201, ApiObjResponse<UserDto>.Success(result));
@@ -54,6 +55,7 @@ namespace HomeDB.Controllers
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
+            string ipAddress = GetIpAddress();
             string username = User.Identity?.Name ?? "Unknown";
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
@@ -64,7 +66,7 @@ namespace HomeDB.Controllers
                 userId: username);
 
             //Registrar el usuario
-            TokenResponseDto result = await _authService.LoginAsync(dto, cToken);
+            TokenResponseDto result = await _authService.LoginAsync(dto, ipAddress, cToken);
 
             //Devolver resultado (200)
             return Ok(ApiObjResponse<TokenResponseDto>.Success(result));

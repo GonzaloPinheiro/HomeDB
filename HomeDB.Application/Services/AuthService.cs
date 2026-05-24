@@ -5,6 +5,7 @@ using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
+using System.Net;
 
 namespace HomeDB.Application.Services
 {
@@ -14,6 +15,7 @@ namespace HomeDB.Application.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IPasswordHelper _passwordHelper;
         private readonly IJwtService _jwtService;
+        private readonly AuditService _auditService;
 
         //TODO Quitar hardcodeado en v2
         private const int AccessTokenExpirationMinutes = 30;
@@ -21,12 +23,13 @@ namespace HomeDB.Application.Services
 
         //TODO Crear interface de logger para poder usarlo
         public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,
-                           IPasswordHelper passwordHelper, IJwtService jwtService)
+                           IPasswordHelper passwordHelper, IJwtService jwtService, AuditService auditService)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _passwordHelper = passwordHelper;
             _jwtService = jwtService;
+            _auditService = auditService;
         }
 
 
@@ -37,7 +40,7 @@ namespace HomeDB.Application.Services
         /// <param name="cToken"></param>
         /// <returns></returns>
         /// <exception cref="UserAlreadyExistsException"></exception>
-        public async Task<UserDto> RegisterAsync(RegisterDto dto, CancellationToken cToken)
+        public async Task<UserDto> RegisterAsync(RegisterDto dto, string ipAddress, CancellationToken cToken)
         {
             //Comprobar si el username ya existe
             if (await _userRepository.UsernameExistsAsync(dto.Username, cToken))
@@ -69,7 +72,8 @@ namespace HomeDB.Application.Services
             await _userRepository.SaveChangesAsync(cToken);
 
             //Loguear que el registro fue exitoso
-            //TODO Implementar logger y loguear que el registro fue exitoso
+            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, cToken);
+
 
             //Devolver un UserDto
             return new UserDto(user.Id, user.Username, user.CreatedAt);
@@ -82,7 +86,7 @@ namespace HomeDB.Application.Services
         /// <param name="cToken"></param>
         /// <returns></returns>
         /// <exception cref="InvalidCredentialsException"></exception>
-        public async Task<TokenResponseDto> LoginAsync(LoginDto dto, CancellationToken cToken)
+        public async Task<TokenResponseDto> LoginAsync(LoginDto dto, string ipAddress, CancellationToken cToken)
         {
             //Obtener el usuario por su username
             User? user = await _userRepository.GetByUsernameWithRolesAsync(dto.Username, cToken);
@@ -114,6 +118,9 @@ namespace HomeDB.Application.Services
 
             //Guardar cambios en la DB
             await _refreshTokenRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, cToken);
 
             //Devolver el Token y el refresh token
             return new TokenResponseDto(accesTokenString, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes), 
@@ -185,6 +192,9 @@ namespace HomeDB.Application.Services
 
             //Persistir los cambios en la DB
             await _refreshTokenRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.Logout, nameof(User), refreshToken.UserId, null, cToken);
         }
     }
 }
