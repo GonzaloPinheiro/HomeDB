@@ -22,6 +22,7 @@ namespace HomeDB.Infrastructure.Repositories
             await _context.FileItems.AddAsync(fileItem, cToken);
         }
 
+        #region Getets
         //Busca el archivo por su id
         public async Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken)
         {
@@ -42,6 +43,30 @@ namespace HomeDB.Infrastructure.Repositories
 
             return await query.AsNoTracking().ToListAsync(cToken);
         }
+
+        //TODO Replantear query para obtener las estadísticas de almacenamiento de forma más eficiente, evitando múltiples consultas a la base de datos.
+        //Devolver estadísticas de almacenamiento para el usuario especificado: total de archivos, tamaño total en bytes y total de carpetas
+        public async Task<(int TotalFiles, long TotalSizeBytes, int TotalFolders)> GetUserStatsAsync(int ownerId, CancellationToken cToken)
+        {
+            //Contar la cantidad de archivos del usuario (excluyendo carpetas)
+            int totalFiles = await _context.FileItems
+                .Where(f => f.OwnerId == ownerId)
+                .CountAsync(cToken);
+
+            //Sumar el tamaño total en bytes de los archivos del usuario
+            long totalSizeBytes = await _context.FileItems
+                .Where(f => f.OwnerId == ownerId)
+                .SumAsync(f => f.SizeBytes, cToken);
+
+            //Contar la cantidad de carpetas del usuario
+            int totalFolders = await _context.FolderItems
+                .Where(f => f.OwnerId == ownerId)
+                .CountAsync(cToken);
+
+            //Devolver las estadísticas como una tupla
+            return (totalFiles, totalSizeBytes, totalFolders);
+        }
+        #endregion
 
         //Elimina un archivo de la base de datos
         public void DeleteFile(FileItem fileItem)

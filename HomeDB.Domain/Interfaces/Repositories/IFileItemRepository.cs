@@ -27,6 +27,14 @@ namespace HomeDB.Domain.Interfaces.Repositories
         Task<IEnumerable<FileItem>> GetByOwnerAndFolderAsync(int ownerId, int? folderId, CancellationToken cToken);
 
         /// <summary>
+        /// Retorna las estadísticas de almacenamiento para el usuario especificado.
+        /// </summary>
+        /// <param name="ownerId"></param>
+        /// <param name="cToken"></param>
+        /// <returns></returns>
+        Task<(int TotalFiles, long TotalSizeBytes, int TotalFolders)> GetUserStatsAsync(int ownerId, CancellationToken cToken);
+
+        /// <summary>
         /// Elimina el fileItem recibido como parámetro de la base de datos
         /// </summary>
         /// <param name="fileItem"></param>

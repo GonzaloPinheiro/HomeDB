@@ -26,7 +26,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<IFolderRepository, FolderRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogEntryRepository>();
 
-            // Storage
+            // Storage (+validation)
             services.AddOptions<StorageOptions>()
                     .Bind(configuration.GetSection("Storage"))
                     .ValidateDataAnnotations()
@@ -38,6 +38,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<FilesService>();
             services.AddScoped<FoldersService>();
             services.AddScoped<AuditService>();
+            services.AddScoped<StatisticsService>();
 
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = storageOptions.MaxFileSizeBytes!.Value);
