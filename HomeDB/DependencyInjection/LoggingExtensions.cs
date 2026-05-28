@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Interfaces.Repositories;
+﻿using HomeDB.Application.Services;
+using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Infrastructure.Observability;
 using HomeDB.Infrastructure.Repositories;
 
@@ -16,6 +17,8 @@ namespace HomeDB.DependencyInjection
         {
             services.AddSingleton<ILogEntryRepository, LogEntryRepository>();
             services.AddSingleton<LogBackgroundService>();
+
+            services.AddScoped<LogsService>();
 
             services.AddSingleton<ILogQueue>(sp =>
                 sp.GetRequiredService<LogBackgroundService>());

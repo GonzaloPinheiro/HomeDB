@@ -60,10 +60,6 @@ namespace HomeDB.Middlewares
             {
                 //Mapear la excepción con la indormación para la respuesta http y
                 //el log dependiendo del tipo de excepción
-
-
-
-
                 var (statusCode, errorMessage, errorCode, logLevel, logMessage) = ex switch
                 {
                     FileItemNotFoundException filenfe => (

@@ -1,5 +1,4 @@
 ﻿
-
 namespace HomeDB.Domain.Common
 {
     /// <summary>
