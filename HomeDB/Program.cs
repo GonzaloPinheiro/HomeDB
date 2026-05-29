@@ -1,6 +1,8 @@
 using HomeDB.DependencyInjection;
+using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Storage;
 using HomeDB.Middlewares;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,12 +33,18 @@ builder.Services.AddLoggingInfrastructure();
 // --------------------------- Services & Repositories --------------------------- //
 builder.Services.AddApplicationServices(builder.Configuration, storageOptions);
 
+// --------------------------- Health Checks --------------------------- //
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!)
+    .AddDiskStorageHealthCheck(options =>
+        options.AddDrive("/storage", minimumFreeMegabytes: 512),
+        name: "storage");
+
 // --------------------------- Límite de tamaño de fichero --------------------------- //
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = storageOptions.MaxFileSizeBytes);
 
 // --------------------------- Construir aplicación --------------------------- //
 var app = builder.Build();
-
 
 // --------------------------- Middlewares --------------------------- //
 //Middleware global de manejo de excepciones
@@ -66,6 +74,16 @@ app.UseAuthorization();
 
 //Activa el rate limiting
 app.UseRateLimiter();
+
+// --------------------------- Migraciones automáticas --------------------------- //
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+// --------------------------- Health Checks --------------------------- //
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

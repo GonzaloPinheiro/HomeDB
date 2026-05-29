@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HomeDB.Controllers;
 
 [ApiController]
-[Route("health")]
+[Route("healthCheck")]
 public class HealthController : ControllerBase
 {
     private readonly Logger _logger;
