@@ -26,12 +26,14 @@ namespace HomeDB.DependencyInjection
 
             //Este se usa por el logger, que es singleton, y necesita un DbContextFactory para crear instancias de AppDbContext
             services.AddDbContextFactory<AppDbContext>(options =>
-                options.UseNpgsql(connectionString)
+                options.UseNpgsql(connectionString, npgsql =>
+                           npgsql.MigrationsAssembly("HomeDB.Infrastructure"))
                        .UseSnakeCaseNamingConvention());
 
             //Este se usa para inyectar AppDbContext en los repositorios, que son scoped, y no necesitan un DbContextFactory
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionString)
+                options.UseNpgsql(connectionString, npgsql =>
+                           npgsql.MigrationsAssembly("HomeDB.Infrastructure"))
                        .UseSnakeCaseNamingConvention());
 
             return services;
