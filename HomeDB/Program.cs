@@ -37,7 +37,7 @@ builder.Services.AddApplicationServices(builder.Configuration, storageOptions);
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!)
     .AddDiskStorageHealthCheck(options =>
-        options.AddDrive("/storage", minimumFreeMegabytes: 512),
+        options.AddDrive("/", minimumFreeMegabytes: 512),
         name: "storage");
 
 // --------------------------- Límite de tamaño de fichero --------------------------- //
