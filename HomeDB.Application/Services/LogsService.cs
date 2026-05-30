@@ -66,9 +66,11 @@ namespace HomeDB.Application.Services
         //Devuelve un resumen de los errores agrupados por operación en las últimas horas
         public async Task<IEnumerable<LogErrorSummaryItemDto>> GetErrorSummaryAsync(int hours, CancellationToken cToken)
         {
+            //Obtener últimos errores en base a las horas recibidas
             IEnumerable<(string Operation, int Count)> results =
                 await _logEntryRepository.GetErrorSummaryAsync(hours, cToken);
 
+            //Devolver la lista de errores
             return results.Select(r => new LogErrorSummaryItemDto
             {
                 Operation = r.Operation,
@@ -79,9 +81,11 @@ namespace HomeDB.Application.Services
         //Devuelve una lista de operaciones lentas que superan un umbral de duración especificado
         public async Task<IEnumerable<LogSlowOperationDto>> GetSlowOperationsAsync(long thresholdMs, CancellationToken cToken)
         {
+            //Devuelve una lista de operaciones que superaron el tiempo recibido
             IEnumerable<(string Operation, long DurationMs, DateTimeOffset TimeStamp)> results =
                 await _logEntryRepository.GetSlowOperationsAsync(thresholdMs, cToken);
 
+            //Devolver la lista de operaciones
             return results.Select(r => new LogSlowOperationDto
             {
                 Operation = r.Operation,

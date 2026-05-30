@@ -21,7 +21,7 @@ namespace HomeDB.Domain.Interfaces.Repositories
         Task<IEnumerable<(string Level, DateTimeOffset TimeStamp)>> GetHealthAsync(CancellationToken cToken);
 
         /// <summary>
-        /// 
+        /// Obtener el resumen de errores por operación en las últimas N horas
         /// </summary>
         Task<IEnumerable<(string Operation, int Count)>> GetErrorSummaryAsync(int hours, CancellationToken cToken);
 

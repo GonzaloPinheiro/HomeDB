@@ -11,7 +11,7 @@ namespace HomeDB.Infrastructure.Storage
         public string BasePath { get; set; } = string.Empty;
 
         [Required]
-        [MinLength(1)]
+        [Range(1, long.MaxValue)]
         public long? MaxFileSizeBytes { get; set; } = null;
     }
 }

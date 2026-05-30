@@ -64,7 +64,7 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<LogHealthResponseDto>.Success(result));
         }
 
-        [HttpGet("logs/error-summary")]
+        [HttpGet("logs/errorSummary")]
         public async Task<IActionResult> GetErrorSummaryAsync([FromQuery] int hours = 24, CancellationToken cToken = default)
         {
             //Variables y objetos
