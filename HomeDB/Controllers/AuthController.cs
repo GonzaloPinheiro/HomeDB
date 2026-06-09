@@ -164,7 +164,7 @@ namespace HomeDB.Controllers
             {
                 HttpOnly = true,       //No accesible desde JavaScript
                 Secure = true,         //Solo se envía por HTTPS
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(30) //Mismo TTL que el token JWT
             };
 
@@ -172,7 +172,7 @@ namespace HomeDB.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Path = RefreshTokenCookiePath,
                 Expires = DateTimeOffset.UtcNow.AddDays(7) //Mismo TTL que el refresh token
             };
@@ -186,9 +186,15 @@ namespace HomeDB.Controllers
         /// </summary>
         private void DeleteAuthCookies()
         {
-            Response.Cookies.Delete(nameof(CookieNames.AccessToken));
+            Response.Cookies.Delete(nameof(CookieNames.AccessToken), new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
             Response.Cookies.Delete(nameof(CookieNames.RefreshToken), new CookieOptions
             {
+                Secure = true,
+                SameSite = SameSiteMode.None,
                 Path = RefreshTokenCookiePath
             });
         }
