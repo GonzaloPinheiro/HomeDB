@@ -1,3 +1,4 @@
+using HomeDB.Common;
 using HomeDB.DependencyInjection;
 using HomeDB.Infrastructure.Data;
 using HomeDB.Infrastructure.Storage;
@@ -37,7 +38,7 @@ builder.Services.AddApplicationServices(builder.Configuration, storageOptions);
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!)
     .AddDiskStorageHealthCheck(options =>
-        options.AddDrive("/", minimumFreeMegabytes: 512),
+        options.AddDrive("/storage", minimumFreeMegabytes: 512),
         name: "storage");
 
 // --------------------------- Límite de tamaño de fichero --------------------------- //
@@ -67,13 +68,15 @@ else//Fuerza a los navegadores a usar una conexión segura https(solo se aplica 
 //Redirige cualquier petición http a https
 app.UseHttpsRedirection();
 
-app.UseCors("FrontendDev");
+//Permite el acceso desde el cliente frontend (localhost:5173) con CORS y envío de cookies
+app.UseCors(nameof(CorsNames.AllowFrontend));
+
+//Activa el rate limiting
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-//Activa el rate limiting
-app.UseRateLimiter();
 
 // --------------------------- Migraciones automáticas --------------------------- //
 using (IServiceScope scope = app.Services.CreateScope())

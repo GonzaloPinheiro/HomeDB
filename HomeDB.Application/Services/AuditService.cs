@@ -16,6 +16,7 @@ namespace HomeDB.Application.Services
             _currentUserService = currentUserService;
         }
 
+        //Loguea en el audit log una acción genérica
         public async Task LogAsync(string action,
                                    string? resourceType = null,
                                    int? resourceId = null,
@@ -35,21 +36,20 @@ namespace HomeDB.Application.Services
 
             await _auditLogRepository.InsertAsync(entry, cToken);
 
-
         }
 
-        public async Task LogAuthAsync(int userId, string username, string? ipAddress, CancellationToken cToken)
+        //Audit log específico para auth actions
+        public async Task LogAuthAsync(int userId, string username, string? ipAddress, string action, CancellationToken cToken)
         {
             AuditLogEntry entry = new AuditLogEntry
             {
                 UserId = userId,
                 Username = username,
                 IpAddress = ipAddress,
-                Action = AuditLogActions.Login
+                Action = action
             };
 
             await _auditLogRepository.InsertAsync(entry, cToken);
-
 
         }
     }

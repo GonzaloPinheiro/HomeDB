@@ -1,12 +1,16 @@
 ﻿using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
+using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Infrastructure.Observability;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
-
+    [EnableRateLimiting(nameof(RateLimiterNames.Global))]
+    [Authorize]
     [Route("api/statistics")]
     public class StatisticsController : ApiControllerBase
     {

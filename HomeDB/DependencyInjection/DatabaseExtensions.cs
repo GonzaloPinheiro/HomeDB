@@ -24,18 +24,17 @@ namespace HomeDB.DependencyInjection
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            // Registra IDbContextFactory<AppDbContext> como Singleton para el LogEntryRepository.
-            // Una sola configuración: evita que EF Core acumule dos IDbContextOptionsConfiguration<T>
-            // y llame a UseNpgsql dos veces, lo que corrompía la resolución de IMigrationsAssembly.
+            //Este se usa por el logger, que es singleton, y necesita un DbContextFactory para crear instancias de AppDbContext
             services.AddDbContextFactory<AppDbContext>(options =>
                 options.UseNpgsql(connectionString, npgsql =>
                            npgsql.MigrationsAssembly("HomeDB.Infrastructure"))
                        .UseSnakeCaseNamingConvention());
 
-            // Registra AppDbContext como Scoped para los repositorios, delegando en la factory.
-            // No usa AddDbContext para no registrar una segunda IDbContextOptionsConfiguration<T>.
-            services.AddScoped<AppDbContext>(sp =>
-                sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
+            //Este se usa para inyectar AppDbContext en los repositorios, que son scoped, y no necesitan un DbContextFactory
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(connectionString, npgsql =>
+                           npgsql.MigrationsAssembly("HomeDB.Infrastructure"))
+                       .UseSnakeCaseNamingConvention());
 
             return services;
         }

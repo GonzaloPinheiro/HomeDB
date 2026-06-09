@@ -1,4 +1,6 @@
-﻿namespace HomeDB.DependencyInjection
+﻿using HomeDB.Common;
+
+namespace HomeDB.DependencyInjection
 {
     public static class CorsExtensions
     {
@@ -11,11 +13,12 @@
         {
             services.AddCors(options =>
             {
-                options.AddPolicy("FrontendDev", policy =>
+                options.AddPolicy(nameof(CorsNames.AllowFrontend), policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173")
+                    policy.WithOrigins("http://localhost:5173") //TODO Mover origen a appsettings.json
                           .AllowAnyHeader()
-                          .AllowAnyMethod();
+                          .AllowAnyMethod()
+                          .AllowCredentials(); //Permite el envío de cookies y credenciales en solicitudes CORS
                 });
             });
 

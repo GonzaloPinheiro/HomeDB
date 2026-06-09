@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Common;
+﻿using HomeDB.Common;
+using HomeDB.Domain.Common;
 using System.Threading.RateLimiting;
 
 namespace HomeDB.DependencyInjection
@@ -16,7 +17,7 @@ namespace HomeDB.DependencyInjection
             services.AddRateLimiter(options =>
             {
                 // Global: 100 req/min por IP
-                options.AddPolicy("global", context =>
+                options.AddPolicy(nameof(RateLimiterNames.Global), context =>
                 {
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     return RateLimitPartition.GetTokenBucketLimiter(
@@ -32,7 +33,7 @@ namespace HomeDB.DependencyInjection
                 });
 
                 // Auth: 10 req/min por IP — freno de fuerza bruta
-                options.AddPolicy("auth", context =>
+                options.AddPolicy(nameof(RateLimiterNames.Auth), context =>
                 {
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                     return RateLimitPartition.GetTokenBucketLimiter(

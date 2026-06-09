@@ -7,11 +7,11 @@ namespace HomeDB.Infrastructure.Storage
     public class StorageOptions
     {
         [Required]
-        [MinLength(1)]
+        [MinLength(1, ErrorMessage = "La ruta base de almacenamiento no puede estar vacía.")]
         public string BasePath { get; set; } = string.Empty;
 
         [Required]
-        [Range(1, long.MaxValue)]
+        [Range(1, long.MaxValue, ErrorMessage = "El tamaño máximo de archivo debe ser un valor positivo.")]
         public long? MaxFileSizeBytes { get; set; } = null;
     }
 }

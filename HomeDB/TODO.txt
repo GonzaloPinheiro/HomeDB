@@ -1,1 +1,1 @@
-Hacer que cuando se haga login, se invalide el token antiguo?
+- Crear un ratelimiter global que englobe a todos los endpoints.

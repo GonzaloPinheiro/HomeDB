@@ -117,6 +117,13 @@ namespace HomeDB.Middlewares
                         "Warning",
                         $"Credenciales inválidas. Path: {path}, Method: {method}"
                     ),
+                    InvalidRefreshTokenException irte => (
+                        StatusCodes.Status401Unauthorized,
+                        irte.Message,
+                        ApiErrorCodes.InvalidCredentials,
+                        "Warning",
+                        $"Refresh token inválido o expirado. Path: {path}, Method: {method}"
+                    ),
                     UnauthorizedException ue => (
                         StatusCodes.Status403Forbidden,
                         ue.Message,

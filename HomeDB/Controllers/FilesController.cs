@@ -1,13 +1,17 @@
 ﻿using HomeDB.Application.DTOs.Files;
 using HomeDB.Application.Services;
+using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
     [Route("api/files")]
+    [Authorize]
+    [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     public class FilesController : ApiControllerBase
     {
         private readonly Logger _logger;
@@ -20,7 +24,6 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         [Route("listFiles")]
         public async Task<IActionResult> ListFilesAsync([FromQuery] int? folderId, CancellationToken cToken)
         {
@@ -42,7 +45,6 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<GetFileItemDto>>.Success(files));
         }
 
-        [Authorize]
         [HttpPost]
         [Route("uploadFile")]
         public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file,
@@ -76,7 +78,6 @@ namespace HomeDB.Controllers
             return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
         }
 
-        [Authorize]
         [HttpGet]
         [Route("{id}/downloadFile")]
         public async Task<IActionResult> DownloadFileAsync(int id, CancellationToken cToken)
@@ -99,7 +100,6 @@ namespace HomeDB.Controllers
             return PhysicalFile(result.FilePath, result.ContentType, result.FileName);
         }
 
-        [Authorize]
         [HttpDelete]
         [Route("{id}/deleteFile")]
         public async Task<IActionResult> DeleteFileAsync(int id, CancellationToken cToken)

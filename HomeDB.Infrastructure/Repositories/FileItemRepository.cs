@@ -24,11 +24,19 @@ namespace HomeDB.Infrastructure.Repositories
 
         #region Getets
         //Busca el archivo por su id
-        public async Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken)
+        public async Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken, bool asNoTracking = true)
         {
-            return await _context.FileItems
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == id, cToken);
+            //return await _context.FileItems
+            //    .AsNoTracking()
+            //    .FirstOrDefaultAsync(f => f.Id == id, cToken);
+
+            IQueryable<FileItem> query = _context.FileItems;
+
+            //Aplicar AsNoTracking si se especifica
+            if (asNoTracking)
+                query = query.AsNoTracking();
+
+            return await query.FirstOrDefaultAsync(f => f.Id == id, cToken);
         }
 
         //Busca los archivos por su propietario y carpeta (si se especifica)

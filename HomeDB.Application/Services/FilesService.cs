@@ -71,7 +71,7 @@ namespace HomeDB.Application.Services
             catch (Exception)
             {
                 //Si algo falla, eliminar el archivo del disco para evitar archivos huérfanos
-                await _fileStorageService.DeleteAsync(storedName, cToken);
+                await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
                 throw;
             }
 
@@ -84,7 +84,7 @@ namespace HomeDB.Application.Services
 
             //Si no existe el archivo, lanzar una excepción
             if (fileItem == null)
-                throw new FileNotFoundException("Archivo no encontrado en la base de datos.");
+                throw new FileItemNotFoundException(fileId);
 
             //Verificar que el archivo pertenece al usuario que lo solicita.
             if (fileItem.OwnerId != userId)
@@ -92,7 +92,7 @@ namespace HomeDB.Application.Services
 
             //Verificar que el archivo existe en el disco.
             if (!_fileStorageService.Exists(fileItem.StoredName))
-                throw new FileNotFoundException("Archivo no encontrado en el almacenamiento.");
+                throw new InvalidOperationException($"FileItem {fileId} registrado en BD pero el archivo físico no existe."); //TODO Crear una excepción personalizada para este caso, que borre el registro de la base de datos?.
 
             //Obtener la ruta del archivo en el disco usando el StoredName
             string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
@@ -107,7 +107,7 @@ namespace HomeDB.Application.Services
         public async Task<DeleteFileResponseDto> DeleteFileAsync(int fileId, int userId, CancellationToken cToken)
         {
             //Buscar si existe el archivo recibido por su id en DB
-            FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
+            FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken, false);
 
             //Si no existe el archivo, lanzar excepción
             if (fileItem == null)

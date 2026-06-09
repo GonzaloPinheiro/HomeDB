@@ -1,12 +1,16 @@
 ﻿using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
+using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
+    [EnableRateLimiting(nameof(RateLimiterNames.Global))]
+    [Authorize]
     [Route("api/folders")]
     public class FoldersController : ApiControllerBase
     {
@@ -19,7 +23,6 @@ namespace HomeDB.Controllers
             _foldersService = foldersService;
         }
 
-        [Authorize]
         [HttpPost]
         [Route("create")]
         public async Task<IActionResult> CreateFolderAsync(CreateFolderRequestDto dto, CancellationToken cToken)
@@ -45,7 +48,6 @@ namespace HomeDB.Controllers
         }
 
 
-        [Authorize]
         [HttpGet]
         [Route("{folderId?}")]
         public async Task<IActionResult> GetFolderAsync([FromQuery] int? folderId, CancellationToken cToken)
@@ -70,7 +72,6 @@ namespace HomeDB.Controllers
         }
 
 
-        [Authorize]
         [HttpDelete]
         [Route("{folderId}")]
         public async Task<IActionResult> DeleteFolderAsync([FromRoute] int folderId, CancellationToken cToken)

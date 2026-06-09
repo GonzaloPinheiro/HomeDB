@@ -6,7 +6,7 @@ namespace HomeDB.Infrastructure.Data
     public class DatabaseOptions
     {
         [Required]
-        [MinLength(1)]
+        [MinLength(1, ErrorMessage = "La cadena de conexión a PostgreSQL no puede estar vacía.")]
         public string PostgreSQL_HomeDB { get; set; } = string.Empty;
     }
 }

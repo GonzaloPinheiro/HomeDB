@@ -18,7 +18,7 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <param name="id"></param>
         /// <param name="cToken"></param>
         /// <returns></returns>
-        Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken);
+        Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken, bool asNoTracking = true);
 
         /// <summary>
         /// Retorna los archivos del usuario en la carpeta indicada.

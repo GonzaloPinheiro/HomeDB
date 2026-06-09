@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Interfaces;
+﻿using HomeDB.Common;
+using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,6 +28,7 @@ namespace HomeDB.DependencyInjection
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
+                    //Configurar validación de tokens JWT
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
@@ -35,6 +37,31 @@ namespace HomeDB.DependencyInjection
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!))
+                    };
+                    //Configurar eventos para permitir la autenticación desde cookies si no se proporciona el header Authorization
+                    options.Events = new JwtBearerEvents
+                    {
+                        //Este evento se ejecuta cuando el middleware de autenticación recibe una solicitud
+                        OnMessageReceived = context =>
+                        {
+                            //Si ya viene el header Authorization, dejarlo pasar sin tocar nada
+                            string? authHeader = context.Request.Headers["Authorization"]
+                                .FirstOrDefault();
+                            
+                            if (!string.IsNullOrEmpty(authHeader))
+                            {
+                                return Task.CompletedTask;
+                            }
+
+                            // Si no hay header, intentar leer la cookie
+                            string? tokenFromCookie = context.Request.Cookies[nameof(CookieNames.AccessToken)];
+                            if (!string.IsNullOrEmpty(tokenFromCookie))
+                            {
+                                context.Token = tokenFromCookie;
+                            }
+
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
@@ -45,6 +72,5 @@ namespace HomeDB.DependencyInjection
 
             return services;
         }
-
     }
 }

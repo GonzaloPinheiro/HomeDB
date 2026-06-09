@@ -40,9 +40,10 @@ namespace HomeDB.Infrastructure.Repositories
         }
 
         //Elimina un folder de la base de datos.
-        public async Task DeleteAsync(FolderItem folderItem, CancellationToken cToken)
+        public Task DeleteAsync(FolderItem folderItem, CancellationToken cToken)
         {
             _context.FolderItems.Remove(folderItem);
+            return Task.CompletedTask;
         }
 
         //Comprueba si un folder tiene archivos asociados en la base de datos.

@@ -86,12 +86,13 @@ namespace HomeDB.Infrastructure.Repositories
             DateTimeOffset oneDayAgo = now.AddHours(-24);
 
             //Trae solo Level y TimeStamp, nada más
-            List<(string Level, DateTimeOffset TimeStamp)> relevant = await context.Logs
+            List<(string Level, DateTimeOffset TimeStamp)> relevant = (await context.Logs
                 .AsNoTracking()
                 .Where(l => l.TimeStamp >= oneDayAgo && (l.Level == "Error" || l.Level == "Warning"))
                 .Select(l => new { l.Level, l.TimeStamp })
-                .ToListAsync(cToken)
-                .ContinueWith(t => t.Result.Select(x => (x.Level, x.TimeStamp)).ToList(), cToken);
+                .ToListAsync(cToken))
+                .Select(x => (x.Level, x.TimeStamp))
+                .ToList();
 
             //Devolver logs resultantes
             return relevant;

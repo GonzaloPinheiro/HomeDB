@@ -4,6 +4,7 @@ namespace HomeDB.Domain.Common
     public class AuditLogActions
     {
         public const string Login = "LOGIN";
+        public const string Register = "REGISTER";
         public const string Logout = "LOGOUT";
         public const string UploadFile = "UPLOAD_FILE";
         public const string DownloadFile = "DOWNLOAD_FILE";

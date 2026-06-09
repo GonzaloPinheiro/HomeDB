@@ -72,8 +72,7 @@ namespace HomeDB.Application.Services
             await _userRepository.SaveChangesAsync(cToken);
 
             //Loguear que el registro fue exitoso
-            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, cToken);
-
+            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, AuditLogActions.Register, cToken);
 
             //Devolver un UserDto
             return new UserDto(user.Id, user.Username, user.CreatedAt);
@@ -120,7 +119,7 @@ namespace HomeDB.Application.Services
             await _refreshTokenRepository.SaveChangesAsync(cToken);
 
             //AuditLog
-            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, cToken);
+            await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, AuditLogActions.Login, cToken);
 
             //Devolver el Token y el refresh token
             return new TokenResponseDto(accesTokenString, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes), 

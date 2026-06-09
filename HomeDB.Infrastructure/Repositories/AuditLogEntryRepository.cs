@@ -19,7 +19,7 @@ namespace HomeDB.Infrastructure.Repositories
         public async Task InsertAsync(AuditLogEntry auditLogEntry, CancellationToken cToken)
         {
             await _context.AuditEntries.AddAsync(auditLogEntry, cToken);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cToken);
         }
 
         //Persistir los cambios en la base de datos

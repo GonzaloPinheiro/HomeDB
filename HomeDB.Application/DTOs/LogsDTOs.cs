@@ -1,4 +1,6 @@
-﻿namespace HomeDB.Application.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace HomeDB.Application.DTOs
 {
     public class LogEntryDto
     {
@@ -44,6 +46,7 @@
         public DateTimeOffset? To { get; set; }
         public string? CorrelationId { get; set; }
         public int Page { get; set; } = 1;
+        [Range(1, 200)]
         public int PageSize { get; set; } = 50;
     }
 
