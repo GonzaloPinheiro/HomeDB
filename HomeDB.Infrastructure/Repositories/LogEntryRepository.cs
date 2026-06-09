@@ -107,16 +107,19 @@ namespace HomeDB.Infrastructure.Repositories
             //Rango de tiempo
             DateTimeOffset from = DateTimeOffset.UtcNow.AddHours(-hours);
 
-            //Agrupar por operación y contar errores, ordenando de mayor a menor
-            List<(string Operation, int Count)> results = await context.Logs
+            //Agrupar por operación y contar errores, ordenando de mayor a menor.
+            //Materializar antes del Select de tuplas: EF Core no puede traducir ValueTuple.Create
+            //a SQL cuando viene precedido de un GroupBy (mismo patrón que GetHealthAsync).
+            List<(string Operation, int Count)> results = (await context.Logs
                 .AsNoTracking()
-                .Where(l => l.Level == "Error" && l.TimeStamp >= from)
+                .Where(l => l.Level == "Critical" && l.TimeStamp >= from)
                 .GroupBy(l => l.Operation)
                 .Select(g => new { Operation = g.Key, Count = g.Count() })
                 .OrderByDescending(x => x.Count)
                 .Take(10)
-                .Select(x => ValueTuple.Create(x.Operation, x.Count))
-                .ToListAsync(cToken);
+                .ToListAsync(cToken))
+                .Select(x => (x.Operation, x.Count))
+                .ToList();
 
             //Devolver resultados
             return results;
@@ -127,14 +130,17 @@ namespace HomeDB.Infrastructure.Repositories
             //Crear contexto
             await using AppDbContext context = await _contextFactory.CreateDbContextAsync(cToken);
 
-            //Filtrar logs por duración, ordenarlos de mayor a menor y traer solo los campos necesarios
-            List<(string Operation, long DurationMs, DateTimeOffset TimeStamp)> results = await context.Logs
+            //Filtrar logs por duración, ordenarlos de mayor a menor y traer solo los campos necesarios.
+            //Mismo patrón: materializar primero y proyectar a tuplas en cliente.
+            List<(string Operation, long DurationMs, DateTimeOffset TimeStamp)> results = (await context.Logs
                 .AsNoTracking()
                 .Where(l => l.DurationMs > thresholdMs)
                 .OrderByDescending(l => l.DurationMs)
                 .Take(50)
-                .Select(l => ValueTuple.Create(l.Operation, l.DurationMs, l.TimeStamp))
-                .ToListAsync(cToken);
+                .Select(l => new { l.Operation, l.DurationMs, l.TimeStamp })
+                .ToListAsync(cToken))
+                .Select(x => (x.Operation, x.DurationMs, x.TimeStamp))
+                .ToList();
             
             //Devolver resultados
             return results;
