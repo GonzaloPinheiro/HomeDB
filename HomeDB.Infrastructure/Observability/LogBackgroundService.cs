@@ -54,7 +54,6 @@ namespace HomeDB.Infrastructure.Observability
             bool escrito = _channel.Writer.TryWrite(entry);
             if (!escrito)
             {
-                // Aquí puedes registrar métrica o traza de que se descartó un log
                 Console.WriteLine("La cola de logs está llena. Se descartó un log.");
             }
 

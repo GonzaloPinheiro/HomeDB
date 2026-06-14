@@ -5,7 +5,6 @@ using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
-using System.Net;
 
 namespace HomeDB.Application.Services
 {
@@ -87,22 +86,29 @@ namespace HomeDB.Application.Services
         /// <exception cref="InvalidCredentialsException"></exception>
         public async Task<TokenResponseDto> LoginAsync(LoginDto dto, string ipAddress, CancellationToken cToken)
         {
+            //TODO Sacar dummy correcto, ver el TODO.txt
+            const string DummyHash = "TODO";
+
             //Obtener el usuario por su username
             User? user = await _userRepository.GetByUsernameWithRolesAsync(dto.Username, cToken);
 
             //Asegurarse de que el usuario no es null
             if (user == null)
+            {
+                //Verificar el hash igualmente para que el tiempo de respuesta sea el mismo, impide ataque por timing para obtener nombres de usuarios.
+                _passwordHelper.VerifyPassword(dto.Password, DummyHash);
                 throw new InvalidCredentialsException();
-
+            }
+            
             //Comprobar que la contraseña es correcta
             if (!_passwordHelper.VerifyPassword(dto.Password, user.PasswordHash))
                 throw new InvalidCredentialsException();
-
+            
             //Generar el access token
             string accesTokenString = _jwtService.GenerateAccessToken(user);
 
             //Generar el refresh token
-            string refreshTokenString = _jwtService.GenerateRefreshToken();
+            string refreshTokenString = _passwordHelper.HashRefreshToken(_jwtService.GenerateRefreshToken());
 
             //Crear objeto a insertar
             RefreshToken refreshToken = new RefreshToken
@@ -122,7 +128,7 @@ namespace HomeDB.Application.Services
             await _auditService.LogAuthAsync(user.Id, user.Username, ipAddress, AuditLogActions.Login, cToken);
 
             //Devolver el Token y el refresh token
-            return new TokenResponseDto(accesTokenString, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes), 
+            return new TokenResponseDto(accesTokenString, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
                 refreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
         }
 
@@ -136,7 +142,8 @@ namespace HomeDB.Application.Services
         public async Task<TokenResponseDto> RefreshAsync(RefreshRequestDto dto, CancellationToken cToken)
         {
             //Buscar si existe el refreshToken
-            RefreshToken? refreshToken =  await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, cToken);
+            string refreshTokenHash = _passwordHelper.HashRefreshToken(dto.RefreshToken);
+            RefreshToken? refreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshTokenHash, cToken);
 
             //Si no existe devolver 403 y marcarlo con un log
             if (refreshToken == null || refreshToken.IsRevoked || refreshToken.ExpiresAt <= DateTime.UtcNow)
@@ -144,7 +151,7 @@ namespace HomeDB.Application.Services
                 throw new InvalidRefreshTokenException();
 
             //Crear el nuevo refresh token
-            string newRefreshTokenString = _jwtService.GenerateRefreshToken();
+            string newRefreshTokenString = _passwordHelper.HashRefreshToken(_jwtService.GenerateRefreshToken());
 
             //Si existe marcarlo como revoked
             refreshToken.IsRevoked = true;
@@ -168,7 +175,8 @@ namespace HomeDB.Application.Services
             await _refreshTokenRepository.SaveChangesAsync(cToken);
 
             //Devolver los dos tokens
-            return new TokenResponseDto(newAccesTokenRefresh, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes), newRefreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
+            return new TokenResponseDto(newAccesTokenRefresh, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
+                                        newRefreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
         }
 
         /// <summary>
@@ -180,10 +188,11 @@ namespace HomeDB.Application.Services
         public async Task LogoutAsync(RefreshRequestDto dto, CancellationToken cToken)
         {
             //Buscar si existe el refreshToken
-            RefreshToken? refreshToken =  await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, cToken);
+            string refreshTokenHash = _passwordHelper.HashRefreshToken(dto.RefreshToken);
+            RefreshToken? refreshToken = await _refreshTokenRepository.GetByTokenAsync(refreshTokenHash, cToken);
 
             //Si no existe ignorar de manera silenciosa
-            if(refreshToken == null || refreshToken.IsRevoked)
+            if (refreshToken == null || refreshToken.IsRevoked)
                 return;
 
             //Si existe marcarlo como revoked

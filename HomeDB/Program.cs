@@ -1,14 +1,12 @@
 using HomeDB.Common;
 using HomeDB.DependencyInjection;
 using HomeDB.Infrastructure.Data;
-using HomeDB.Infrastructure.Storage;
 using HomeDB.Middlewares;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// --------------------------- Configuraciónes de appsettings --------------------------- //
-StorageOptions storageOptions = builder.Configuration.GetSection("Storage").Get<StorageOptions>()!;
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -17,7 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //---------------------------CORS---------------------------//
-builder.Services.AddCorsConfiguration();
+builder.Services.AddCorsConfiguration(builder.Configuration);
 
 //---------------------------RateLimiter---------------------------//
 builder.Services.AddRateLimiterConfiguration();
@@ -32,7 +30,7 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddLoggingInfrastructure();
 
 // --------------------------- Services & Repositories --------------------------- //
-builder.Services.AddApplicationServices(builder.Configuration, storageOptions);
+builder.Services.AddApplicationServices(builder.Configuration);
 
 // --------------------------- Health Checks --------------------------- //
 builder.Services.AddHealthChecks()
@@ -42,10 +40,25 @@ builder.Services.AddHealthChecks()
         name: "storage");
 
 // --------------------------- Límite de tamaño de fichero --------------------------- //
-builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = storageOptions.MaxFileSizeBytes);
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Storage:MaxFileSizeBytes"));
+
+// TODO: mover a un Options class con ValidateOnStart siguiendo el patrón del resto de opciones
+string allowedHosts = builder.Configuration["AllowedHosts"] ?? string.Empty;
+if (!builder.Environment.IsDevelopment() && allowedHosts is "*" or "AllowedHostsPlaceHolder" or "")
+    throw new InvalidOperationException("AllowedHosts debe configurarse con un hostname real.");
 
 // --------------------------- Construir aplicación --------------------------- //
 var app = builder.Build();
+
+//--------------------------- Middleware para encabezados reenviados --------------------------- //
+//Configura la aplicación para procesar la ip y esquema real del cliente correctamente, ya que la api está detrás de cloudflared.
+//cloudflared llega al contenedor desde la red bridge de Docker (no loopback), por lo que hay que declararla
+//como red de confianza; si no, el middleware descarta X-Forwarded-For/X-Forwarded-Proto en silencio.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownNetworks = { new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("172.16.0.0"), 12) } //Rango privado que usa Docker para sus redes bridge
+});
 
 // --------------------------- Middlewares --------------------------- //
 //Middleware global de manejo de excepciones
@@ -60,13 +73,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else//Fuerza a los navegadores a usar una conexión segura https(solo se aplica fuera de development)
-{
-    app.UseHsts();
-}
-
-//Redirige cualquier petición http a https
-app.UseHttpsRedirection();
 
 //Permite el acceso desde el cliente frontend (localhost:5173) con CORS y envío de cookies
 app.UseCors(nameof(CorsNames.AllowFrontend));

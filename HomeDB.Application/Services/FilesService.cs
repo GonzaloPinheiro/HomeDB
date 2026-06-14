@@ -11,15 +11,20 @@ namespace HomeDB.Application.Services
     {
         private readonly IFileStorageService _fileStorageService;
         private readonly IFileItemRepository _fileItemRepository;
+        private readonly IFolderRepository _folderRepository;
         private readonly AuditService _auditService;
 
-        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository, AuditService auditService)
+        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository, IFolderRepository folderRepository, AuditService auditService)
         {
             _fileStorageService = fileStorageService;
             _fileItemRepository = fileItemRepository;
+            _folderRepository = folderRepository;
             _auditService = auditService;
         }
 
+        /// <summary>
+        /// Guarda un archivo en el disco del servidor y crea un registro en la base de datos con su metadata. Devuelve un DTO con la información del archivo subido.
+        /// </summary>
         public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request,
                                                                     int ownerId,
                                                                     CancellationToken cToken)
@@ -27,6 +32,17 @@ namespace HomeDB.Application.Services
             //Generar el guid único para el archivo con el mismo formato de extensión del archivo original
             string extension = Path.GetExtension(request.FileName); // → ".jpg"
             string storedName = Guid.NewGuid().ToString() + extension; // → "a1b2c3d4-....jpg"
+
+            //Si se especificó un FolderId, verificar que exista y que pertenezca al usuario que sube el archivo
+            if (request.FolderId.HasValue)
+            {
+                //Buscar el folder indicado por su id en la base de datos
+                FolderItem? folder = await _folderRepository.GetByIdAsync(request.FolderId.Value, cToken);
+
+                //Si no existe el folder o no pertenece al usuario, lanzar una excepción
+                if (folder == null || folder.OwnerId != ownerId)
+                    throw new ParentFolderNotFoundException(request.FolderId.Value);
+            }
 
             try
             {
@@ -77,6 +93,10 @@ namespace HomeDB.Application.Services
 
         }
 
+        /// <summary>
+        /// Descarga un archivo del disco del servidor verificando que el usuario tenga permiso para acceder a él. 
+        /// Devuelve un DTO con la ruta del archivo en el disco, su nombre original y su tipo de contenido.
+        /// </summary>
         public async Task<DownloadFileResponseDto> DownloadFileAsync(int fileId, int userId, CancellationToken cToken)
         {
             // Buscar el FileItem por su Id
@@ -88,7 +108,7 @@ namespace HomeDB.Application.Services
 
             //Verificar que el archivo pertenece al usuario que lo solicita.
             if (fileItem.OwnerId != userId)
-                throw new UnauthorizedAccessException("No tienes permiso para acceder a este archivo.");
+                throw new FileItemNotFoundException(fileId);
 
             //Verificar que el archivo existe en el disco.
             if (!_fileStorageService.Exists(fileItem.StoredName))
@@ -104,6 +124,9 @@ namespace HomeDB.Application.Services
             return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
         }
 
+        /// <summary>
+        /// Elimina un archivo del disco del servidor y su registro en la base de datos.
+        /// </summary>
         public async Task<DeleteFileResponseDto> DeleteFileAsync(int fileId, int userId, CancellationToken cToken)
         {
             //Buscar si existe el archivo recibido por su id en DB
@@ -115,7 +138,7 @@ namespace HomeDB.Application.Services
 
             //Verificar que el archivo pertenece al usuario que lo solicita.
             if (fileItem.OwnerId != userId)
-                throw new UnauthorizedException(userId);
+                throw new FileItemNotFoundException(fileId);
 
             //Eliminar el archivo del disco usando el StoredName
             await _fileStorageService.DeleteAsync(fileItem.StoredName, cToken);
@@ -133,6 +156,10 @@ namespace HomeDB.Application.Services
             return new DeleteFileResponseDto(fileId, fileItem.FileName);
         }
 
+        /// <summary>
+        /// Obtiene una lista de archivos del disco del servidor verificando que el usuario tenga permiso para acceder a ellos.
+        /// Si se especifica el folderId, solo se listarán los archivos que pertenecen a esa carpeta. Si no se especifica, se listarán todos los archivos de la carpeta raiz.
+        /// </summary>
         public async Task<IEnumerable<GetFileItemDto>> ListFilesAsync(int ownerId, int? folderId, CancellationToken cToken)
         {
             //Obtener la lista de archivos del usuario y carpeta especificados

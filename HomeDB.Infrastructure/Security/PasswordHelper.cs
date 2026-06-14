@@ -11,7 +11,7 @@ namespace HomeDB.Infrastructure.Security
         private const int KeySize = 32;
 
         /// <summary>
-        /// Genera un hash seguro de una contraseña utilizando PBKDF2 con SHA256 y una sal aleatoria.
+        /// Genera un hash seguro de una contraseña utilizando PBKDF2 con SHA256 y un salt aleatorio.
         /// </summary>
         /// <param name="password"></param>
         /// <returns></returns>
@@ -55,7 +55,7 @@ namespace HomeDB.Infrastructure.Security
         }
 
         /// <summary>
-        /// 
+        /// Genera un hash seguro de un token de refresco utilizando SHA256.
         /// </summary>
         /// <param name="refreshToken"></param>
         /// <returns></returns>

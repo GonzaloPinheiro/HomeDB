@@ -3,9 +3,11 @@ using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Infrastructure.Observability;
+using HomeDB.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 
 namespace HomeDB.Controllers
 {
@@ -15,17 +17,20 @@ namespace HomeDB.Controllers
     {
         private readonly Logger _logger;
         private readonly AuthService _authService;
+        private readonly SameSiteMode _cookieSameSite;
 
-        public AuthController(Logger logger, AuthService authService)
+        public AuthController(Logger logger, AuthService authService, IOptions<AuthOptions> authOptions)
         {
             _logger = logger;
             _authService = authService;
+            _cookieSameSite = authOptions.Value.CookieSameSite!.Value;
         }
 
         /// <summary>
         /// Registra un nuevo usuario en el sistema.
-        /// </summary>s
+        /// </summary>
         [EnableRateLimiting(nameof(RateLimiterNames.Auth))]
+        [Authorize(Roles = nameof(RolesList.Admin))] //Solo administradores pueden registrar nuevos usuarios
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> RegisterAsync(RegisterDto dto, CancellationToken cToken)
@@ -164,7 +169,7 @@ namespace HomeDB.Controllers
             {
                 HttpOnly = true,       //No accesible desde JavaScript
                 Secure = true,         //Solo se envía por HTTPS
-                SameSite = SameSiteMode.None,
+                SameSite = _cookieSameSite,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(30) //Mismo TTL que el token JWT
             };
 
@@ -172,7 +177,7 @@ namespace HomeDB.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = _cookieSameSite,
                 Path = RefreshTokenCookiePath,
                 Expires = DateTimeOffset.UtcNow.AddDays(7) //Mismo TTL que el refresh token
             };
@@ -188,13 +193,14 @@ namespace HomeDB.Controllers
         {
             Response.Cookies.Delete(nameof(CookieNames.AccessToken), new CookieOptions
             {
+                HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None
+                SameSite = _cookieSameSite
             });
             Response.Cookies.Delete(nameof(CookieNames.RefreshToken), new CookieOptions
             {
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = _cookieSameSite,
                 Path = RefreshTokenCookiePath
             });
         }

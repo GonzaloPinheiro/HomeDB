@@ -3,11 +3,15 @@ services:
     build: .
     container_name: homedb-api
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
     environment:
       - ConnectionStrings__PostgreSQL_HomeDB=Host=db;Database=homedb;Username=homedb_user;Password=${DB_PASSWORD}
       - Jwt__Key=${JWT_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
+      - Auth__CookieSameSite=Strict
+      - AllowedHosts=${ALLOWED_HOSTS}
+      - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN}
     volumes:
       - ./storage:/storage/files
     depends_on:
@@ -23,6 +27,7 @@ services:
   db:
     image: postgres:16
     container_name: homedb-db
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=homedb
       - POSTGRES_USER=homedb_user

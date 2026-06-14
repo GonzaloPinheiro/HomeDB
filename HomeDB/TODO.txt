@@ -1,1 +1,5 @@
 - Crear un ratelimiter global que englobe a todos los endpoints.
+
+- Sacar valor dummy de contraseña para el login:
+	PasswordHelper ph = new PasswordHelper();
+	Console.WriteLine(ph.HashPassword("dummyContrasenha123"));

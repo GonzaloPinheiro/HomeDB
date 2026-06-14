@@ -15,9 +15,8 @@ namespace HomeDB.DependencyInjection
         /// </summary>
         /// <param name="services">Colección de servicios de la aplicación.</param>
         /// <param name="configuration">Configuración de la aplicación. Se usa para leer la sección Storage.</param>
-        /// <param name="storageOptions">Opciones de almacenamiento.</param>
         /// <returns>La misma instancia de <see cref="IServiceCollection"/> para encadenar llamadas.</returns>
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration, StorageOptions storageOptions)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Repositorios
             services.AddScoped<IUserRepository, UserRepository>();
@@ -41,7 +40,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<StatisticsService>();
 
             // Límite de tamaño de fichero
-            services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = storageOptions.MaxFileSizeBytes!.Value);
+            services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));
 
             return services;
         }

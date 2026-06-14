@@ -25,6 +25,12 @@ namespace HomeDB.DependencyInjection
              .ValidateDataAnnotations()
              .ValidateOnStart();
 
+            //Configurar opciones de autenticación (cookies) desde appsettings.json y validar en tiempo de arranque
+            services.AddOptions<AuthOptions>()
+             .Bind(configuration.GetSection("Auth"))
+             .ValidateDataAnnotations()
+             .ValidateOnStart();
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {

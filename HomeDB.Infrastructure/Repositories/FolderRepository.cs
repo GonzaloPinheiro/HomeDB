@@ -24,7 +24,7 @@ namespace HomeDB.Infrastructure.Repositories
                 .FirstOrDefaultAsync(f => f.Id == folderId, cToken);
         }
 
-        //Busca los folers hijos del folder padre indicado. (Filtra por el ownerId)
+        //Busca los folders hijos del folder padre indicado. (Filtra por el ownerId)
         public async Task<IEnumerable<FolderItem>> GetByParentAsync(int ownerId, int? parentFolderId, CancellationToken cToken)
         {
             return await _context.FolderItems
