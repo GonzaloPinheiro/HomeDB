@@ -20,6 +20,9 @@ builder.Services.AddCorsConfiguration(builder.Configuration);
 //---------------------------RateLimiter---------------------------//
 builder.Services.AddRateLimiterConfiguration();
 
+//---------------------------SystemMonitoring---------------------------//
+builder.Services.AddSystemMonitoring(builder.Configuration);
+
 //---------------------------JWT Authentication---------------------------//    
 builder.Services.AddJwtAuthentication(builder.Configuration);
 

@@ -6,7 +6,7 @@ namespace HomeDB.Application.DTOs.Files
                                     string ContentType, int? FolderId);
 
     //Se usa para proporcionar información detallada del archivo al cliente después de subirlo.
-    public record UploadFileResponseDto(int Id, String FileName, long SizeBytes, 
+    public record UploadFileResponseDto(int Id, string FileName, long SizeBytes, 
                                         string ContentType, int? FolderId, int OwnerId, DateTime UploadedAt);
 
     public record DownloadFileResponseDto(string FilePath, string FileName, string ContentType);

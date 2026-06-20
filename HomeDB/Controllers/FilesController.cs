@@ -74,7 +74,7 @@ namespace HomeDB.Controllers
             //Subir el archivo
             UploadFileResponseDto result = await _filesService.UploadFileAsync(dto, userId, cToken);
 
-            //Devolver resultado (200)
+            //Devolver resultado
             return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
         }
 

@@ -38,14 +38,14 @@ namespace HomeDB.Controllers
             //Variables y objetos
             string correlationId = GetCorrelationId();
             string ipAddress = GetIpAddress();
-            string username = User.Identity?.Name ?? "Unknown";
+            int userId = GetUserId();
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
                 source: "HomeDB.Controllers.AuthController",
                 operation: "RegisterAsync()",
                 correlationId: correlationId,
-                userId: username);
+                userId: userId.ToString());
 
             //Registrar el usuario
             UserDto result = await _authService.RegisterAsync(dto, ipAddress, cToken);
@@ -60,7 +60,7 @@ namespace HomeDB.Controllers
         [EnableRateLimiting(nameof(RateLimiterNames.Auth))]
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> LoginAsync(LoginDto dto, CancellationToken cToken)
+        public async Task<IActionResult> LoginAsync(LoginDto dto, CancellationToken cToken) 
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
@@ -118,6 +118,33 @@ namespace HomeDB.Controllers
 
             //Devolver resultado (200)
             return Ok(ApiObjResponse<TokenResponseDto>.Success(result));
+        }
+
+        /// <summary>
+        /// Cambia la contraseña del usuario indicado en el dto y anula los refreshTokens.
+        /// </summary>
+        [EnableRateLimiting(nameof(RateLimiterNames.Auth))]
+        [HttpPut]
+        [Authorize]
+        [Route("changePassword")]
+        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordRequestDto dto, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.AuthController",
+                operation: "ChangePasswordAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Cambiar la contraseña
+            await _authService.ChangePasswordAsync(dto, userId,cToken);
+
+            //Devolver 200
+            return Ok(ApiObjResponse<object?>.Success(null));
         }
 
         /// <summary>

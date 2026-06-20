@@ -31,6 +31,16 @@ namespace HomeDB.Infrastructure.Repositories
                 .FirstOrDefaultAsync(r => r.Token == rt, cToken);
         }
 
+        //Hace revoke de todos los refresk tokens del usuario indicado
+        public async Task RevokeAllByUserIdAsync(int userId, CancellationToken cToken)
+        {
+            await _context.RefreshTokens
+                    .Where(r => r.UserId == userId && !r.IsRevoked)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(r => r.IsRevoked, true));
+
+        }
+
         //Confirma los cambios sobre la base de datos
         public async Task SaveChangesAsync(CancellationToken cToken)
         {

@@ -6,7 +6,7 @@ namespace HomeDB.Domain.Entities
         public int Id { get; set; }                                          // PK (identity)
         public DateTimeOffset TimeStamp { get; set; } = DateTimeOffset.MinValue; // momento del registro (UTC)
         public string Level { get; set; } = string.Empty;                   // Info, Warning, Error, Critical
-        public string Source { get; set; } = string.Empty;                  // "TFCiclo.Api.Controllers.X"
+        public string Source { get; set; } = string.Empty;                  // "HomeDB.Api.Controllers.X"
         public string Operation { get; set; } = string.Empty;               // Nombre de la operación/método
         public string Message { get; set; } = string.Empty;                 // Mensaje principal
         public string Exception { get; set; } = string.Empty;               // StackTrace / excepción (nullable)

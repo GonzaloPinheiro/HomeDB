@@ -23,6 +23,19 @@ namespace HomeDB.Infrastructure.Repositories
             return await _context.Users.AnyAsync(u => u.Username == username, cToken);
         }
 
+        //Devuelve un usuario por su userId
+        public async Task<User?> GetUserByIdAsync(int userId, CancellationToken cToken, bool asNoTracking = true)
+        {
+            IQueryable<User> query = _context.Users;
+
+            //Si se especifica, se ejecuta la consulta sin seguimiento de cambios para mejorar el rendimiento
+            if (asNoTracking)
+                query = query.AsNoTracking();
+
+            //Devolver resultado
+            return await query.FirstOrDefaultAsync(u => u.Id == userId, cToken);
+        }
+
         //Devuelve el usuario con sus roles asignados
         public async Task<User?> GetByUsernameWithRolesAsync(string username, CancellationToken cToken, bool asNoTracking = true)
         {

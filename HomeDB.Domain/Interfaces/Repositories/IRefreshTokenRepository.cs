@@ -10,6 +10,8 @@ namespace HomeDB.Domain.Interfaces.Repositories
         //Busca un token por su valor
         Task<RefreshToken?> GetByTokenAsync(string refreshToken, CancellationToken cToken);
 
+        Task RevokeAllByUserIdAsync(int userId, CancellationToken cToken);
+
         //Confirma los cambios sobre la base de datos
         Task SaveChangesAsync(CancellationToken cToken);
     }

@@ -1,5 +1,4 @@
-﻿using HomeDB.Common;
-using HomeDB.Domain.Common;
+﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Infrastructure.Observability;
@@ -102,6 +101,14 @@ namespace HomeDB.Middlewares
                         "Warning",
                         $"Usuario no encontrado. Path: {path}, Method: {method}"
                     ),
+
+                    MetricNotFoundException mnfe => (
+                         StatusCodes.Status404NotFound,
+                         mnfe.Message,
+                         ApiErrorCodes.MetricNotFound,
+                         "Warning",
+                         $"No ha sido posible encontrar la métrica indicada. Path: {path}, Method: {method}"
+                     ),
 
                     UserAlreadyExistsException useraee => (
                         StatusCodes.Status409Conflict,

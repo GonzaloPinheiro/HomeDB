@@ -1,4 +1,5 @@
-﻿
+﻿using System.ComponentModel.DataAnnotations;
+
 namespace HomeDB.Application.DTOs.Auth
 {
     //DTO para el registro de el usaurio
@@ -20,4 +21,14 @@ namespace HomeDB.Application.DTOs.Auth
 
     //DTO para la solicitud de refresh token
     public record RefreshRequestDto(string RefreshToken);
+
+    //DTO para la solicitud de cambio de contraseña
+    public class ChangePasswordRequestDto
+    {
+        [Required]
+        public string OldPassword { get; set; } = string.Empty;
+
+        [Required]
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

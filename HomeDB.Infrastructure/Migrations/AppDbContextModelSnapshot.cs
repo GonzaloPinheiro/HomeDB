@@ -306,6 +306,57 @@ namespace HomeDB.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HomeDB.Domain.Entities.SystemMetricsEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double?>("CpuUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("cpu_usage_percent");
+
+                    b.Property<long?>("DiskTotalBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("disk_total_bytes");
+
+                    b.Property<double?>("DiskUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("disk_usage_percent");
+
+                    b.Property<long?>("DiskUsedBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("disk_used_bytes");
+
+                    b.Property<long?>("MemoryTotalBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_total_bytes");
+
+                    b.Property<double?>("MemoryUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("memory_usage_percent");
+
+                    b.Property<long?>("MemoryUsedBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_used_bytes");
+
+                    b.Property<double?>("TemperatureCelsius")
+                        .HasColumnType("double precision")
+                        .HasColumnName("temperature_celsius");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.HasKey("Id")
+                        .HasName("pk_system_metrics_entries");
+
+                    b.ToTable("system_metrics_entries", (string)null);
+                });
+
             modelBuilder.Entity("HomeDB.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")

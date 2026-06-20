@@ -34,7 +34,7 @@ namespace HomeDB.Controllers
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
-                source: "RaspDrive.Api.Controllers.AdminController",
+                source: "HomeDB.Controllers.AdminController",
                 operation: "GetLogsAsync()",
                 correlationId: correlationId,
                 userId: userId.ToString());
@@ -55,7 +55,7 @@ namespace HomeDB.Controllers
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
-                source: "RaspDrive.Api.Controllers.AdminController",
+                source: "HomeDB.Controllers.AdminController",
                 operation: "GetHealthAsync()",
                 correlationId: correlationId,
                 userId: userId.ToString());
@@ -76,7 +76,7 @@ namespace HomeDB.Controllers
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
-                source: "RaspDrive.Api.Controllers.AdminController",
+                source: "HomeDB.Controllers.AdminController",
                 operation: "GetErrorSummaryAsync()",
                 correlationId: correlationId,
                 userId: userId.ToString());
@@ -98,7 +98,7 @@ namespace HomeDB.Controllers
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(
-                source: "RaspDrive.Api.Controllers.AdminController",
+                source: "HomeDB.Controllers.AdminController",
                 operation: "GetSlowOperationsAsync()",
                 correlationId: correlationId,
                 userId: userId.ToString());

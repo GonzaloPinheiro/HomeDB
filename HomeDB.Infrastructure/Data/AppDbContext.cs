@@ -16,6 +16,7 @@ namespace HomeDB.Infrastructure.Data
         public DbSet<LogEntry> Logs => Set<LogEntry>(); //Tabla para logs de la aplicación
         public DbSet<AuditLogEntry> AuditEntries => Set<AuditLogEntry>(); //Tabla para auditoría de cambios
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>(); //Tabla para tokens de actualización
+        public DbSet<SystemMetricsEntry> SystemMetricsEntries => Set<SystemMetricsEntry>(); //Tabla para las métricas del sistema
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

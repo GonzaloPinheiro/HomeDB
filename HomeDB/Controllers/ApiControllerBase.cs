@@ -16,6 +16,7 @@ namespace HomeDB.Controllers
 
         /// <summary>
         /// Obtiene el userId del token JWT del request actual
+        /// Solo se debe usar en controladores con [Authorize]
         /// </summary>
         protected int GetUserId()
         {

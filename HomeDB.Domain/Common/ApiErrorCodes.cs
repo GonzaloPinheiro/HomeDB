@@ -15,6 +15,7 @@ namespace HomeDB.Domain.Common
         UserAlreadyExists = 1007,
         UserNotFound = 1008,
         RateLimitExceeded = 1009,
+        MetricNotFound = 1010,
         InternalError = 9999
     }
 }

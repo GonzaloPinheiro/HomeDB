@@ -87,7 +87,7 @@ namespace HomeDB.Application.Services
         public async Task<TokenResponseDto> LoginAsync(LoginDto dto, string ipAddress, CancellationToken cToken)
         {
             //TODO Sacar dummy correcto, ver el TODO.txt
-            const string DummyHash = "TODO";
+            //const string DummyHash = "TODO";
 
             //Obtener el usuario por su username
             User? user = await _userRepository.GetByUsernameWithRolesAsync(dto.Username, cToken);
@@ -96,7 +96,7 @@ namespace HomeDB.Application.Services
             if (user == null)
             {
                 //Verificar el hash igualmente para que el tiempo de respuesta sea el mismo, impide ataque por timing para obtener nombres de usuarios.
-                _passwordHelper.VerifyPassword(dto.Password, DummyHash);
+                //_passwordHelper.VerifyPassword(dto.Password, DummyHash);
                 throw new InvalidCredentialsException();
             }
             
@@ -177,6 +177,41 @@ namespace HomeDB.Application.Services
             //Devolver los dos tokens
             return new TokenResponseDto(newAccesTokenRefresh, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
                                         newRefreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
+        }
+
+        /// <summary>
+        /// Cambia la contraseña del userId recibido por la indicada en el dto
+        /// </summary>
+        public async Task ChangePasswordAsync(ChangePasswordRequestDto dto, int userId, CancellationToken cToken)
+        {
+            //Obtener el usuario con tracking para que EF detecte el cambio de contraseña
+            User? user = await _userRepository.GetUserByIdAsync(userId, cToken, asNoTracking: false);
+
+            //Comprobar que el usuario existe
+            if(user == null)
+                throw new UserNotFoundException(userId);
+
+            //Hashear la nueva contraseña
+            string newPasswordHash = _passwordHelper.HashPassword(dto.NewPassword);
+
+            //Comprobar si la contraseña antigua coincide
+            if (!_passwordHelper.VerifyPassword(dto.OldPassword, user.PasswordHash))
+                throw new InvalidCredentialsException();
+
+            //Sustituir la contraseña antigua por la nueva
+            user.PasswordHash = newPasswordHash;
+
+            //Persistit los cambios en la DB
+            await _userRepository.SaveChangesAsync(cToken);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.ChangePassword, null, null, null, cToken);
+
+            //Anular todos los tokens activos del usuario
+            await _refreshTokenRepository.RevokeAllByUserIdAsync(userId, cToken);
+
+            //Persistir los cambios en la DB
+            await _refreshTokenRepository.SaveChangesAsync(cToken);
         }
 
         /// <summary>

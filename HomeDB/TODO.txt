@@ -3,3 +3,12 @@
 - Sacar valor dummy de contraseña para el login:
 	PasswordHelper ph = new PasswordHelper();
 	Console.WriteLine(ph.HashPassword("dummyContrasenha123"));
+
+- Crear migración de base de datos para el sysmtemetrics
+
+- Cambiar los DTOs para seguir la convención(record -> dto de respuesta) y (class -> dto de entrada)
+- Ver que campos en las tablas vale la pena indexar de forma realista
+
+
+Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
+Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB

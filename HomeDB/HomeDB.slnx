@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../Dockerfile" />
+    <File Path="../docker-compose.yml" />
+    <File Path="../.gitignore" />
+    <File Path="../.env" />
+  </Folder>
   <Project Path="../HomeDB.Application/HomeDB.Application.csproj" />
   <Project Path="../HomeDB.Domain/HomeDB.Domain.csproj" />
   <Project Path="../HomeDB.Infrastructure/HomeDB.Infrastructure.csproj" />

@@ -6,6 +6,8 @@ namespace HomeDB.Domain.Interfaces.Repositories
     {
         //Comrpueba si ya existe un usuario con el nombre indicado
         Task<bool> UsernameExistsAsync(string username, CancellationToken cToken);
+        //Devuelve un usuario buscando por el userId
+        Task<User?> GetUserByIdAsync(int userId, CancellationToken cToken, bool asNoTracking = true);
         //Devuelve el usuario junto con sus roles asignados
         Task<User?> GetByUsernameWithRolesAsync(string username, CancellationToken cToken, bool asNoTracking = true);
         //Agrega un nuevo usuario

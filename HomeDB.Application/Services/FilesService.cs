@@ -30,8 +30,8 @@ namespace HomeDB.Application.Services
                                                                     CancellationToken cToken)
         {
             //Generar el guid único para el archivo con el mismo formato de extensión del archivo original
-            string extension = Path.GetExtension(request.FileName); // → ".jpg"
-            string storedName = Guid.NewGuid().ToString() + extension; // → "a1b2c3d4-....jpg"
+            string extension = Path.GetExtension(request.FileName);
+            string storedName = Guid.NewGuid().ToString() + extension;
 
             //Si se especificó un FolderId, verificar que exista y que pertenezca al usuario que sube el archivo
             if (request.FolderId.HasValue)
