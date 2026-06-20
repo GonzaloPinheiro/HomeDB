@@ -22,8 +22,9 @@ appsettings.Local.json
 # Published output
 **/publish/
 
-# EF Core migrations SQL scripts (generated, not source)
+# Designer.cs auto-generados (excepto los de migraciones EF Core, que son necesarios para descubrir migraciones)
 *.Designer.cs
+!**/Migrations/*.Designer.cs
 
 # .NET tool manifests (optional — remove if you commit them)
 # .config/dotnet-tools.json
