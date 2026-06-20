@@ -1,7 +1,6 @@
 ﻿using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Infrastructure.Data;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeDB.Infrastructure.Repositories
@@ -39,11 +38,6 @@ namespace HomeDB.Infrastructure.Repositories
         //Devuelve el usuario con sus roles asignados
         public async Task<User?> GetByUsernameWithRolesAsync(string username, CancellationToken cToken, bool asNoTracking = true)
         {
-            //return await _context.Users
-            //    .Include(u => u.UserRoles)
-            //    .ThenInclude(ur => ur.Role)
-            //    .FirstOrDefaultAsync(u => u.Username == username, cToken);
-
             IQueryable<User> query = _context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role);
