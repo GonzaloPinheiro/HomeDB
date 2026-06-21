@@ -95,8 +95,15 @@ using (IServiceScope scope = app.Services.CreateScope())
 }
 
 // --------------------------- Health Checks --------------------------- //
+//Sirve el index.html al entrar al dominio.
+app.UseDefaultFiles();
+//Sirve los archivos estáticos (index.html, js, css, etc.) desde wwwroot.
+app.UseStaticFiles();
+
 app.MapHealthChecks("/health");
 
 app.MapControllers();
+//Fallback  de todas las rutas no encontradas al index.html para que el frontend maneje el routing.
+app.MapFallbackToFile("index.html");
 
 app.Run();

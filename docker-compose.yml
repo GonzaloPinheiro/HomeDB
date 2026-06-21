@@ -1,6 +1,8 @@
 services:
   api:
-    build: .
+    build:
+      context: ..
+      dockerfile: HomeDB/Dockerfile
     container_name: homedb-api
     ports:
       - "8080:8080"
