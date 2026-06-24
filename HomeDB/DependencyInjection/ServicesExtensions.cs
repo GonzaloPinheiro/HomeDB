@@ -38,6 +38,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<FoldersService>();
             services.AddScoped<AuditService>();
             services.AddScoped<StatisticsService>();
+            services.AddScoped<UsersService>();
 
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));

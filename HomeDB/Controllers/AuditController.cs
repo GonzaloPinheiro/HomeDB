@@ -25,7 +25,8 @@ namespace HomeDB.Controllers
             _logger = logger;
         }
 
-        [HttpGet("auditLogs")]
+        [HttpGet]
+        [Route("auditogs")]
         public async Task<IActionResult> GetAuditLogsAsync([FromQuery] GetAuditLogsRequestDto query, CancellationToken cToken)
         {
             //Variables y objetos

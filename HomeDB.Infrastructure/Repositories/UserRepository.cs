@@ -35,6 +35,19 @@ namespace HomeDB.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(u => u.Id == userId, cToken);
         }
 
+        //Devuelve un usuario con sus roles buscando por el userId
+        public async Task<User?> GetUserByIdWithRolesAsync(int userId, CancellationToken cToken, bool asNoTracking = true)
+        {
+            IQueryable<User> query = _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role);
+
+            if (asNoTracking)
+                query = query.AsNoTracking();
+
+            return await query.FirstOrDefaultAsync(u => u.Id == userId, cToken);
+        }
+
         //Devuelve el usuario con sus roles asignados
         public async Task<User?> GetByUsernameWithRolesAsync(string username, CancellationToken cToken, bool asNoTracking = true)
         {
@@ -49,10 +62,61 @@ namespace HomeDB.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(u => u.Username == username, cToken);
         }
 
+        //Devuelve una lista paginada y filtrada de usuarios con sus roles
+        public async Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(
+            int page, int pageSize,
+            int? userId, string? userName, string? email,
+            DateTimeOffset? from, DateTimeOffset? to,
+            int? roleId, string? roleName,
+            CancellationToken cToken)
+        {
+            IQueryable<User> query = _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .AsNoTracking();
+
+            if (userId.HasValue)
+                query = query.Where(u => u.Id == userId.Value);
+
+            if (!string.IsNullOrEmpty(userName))
+                query = query.Where(u => u.Username.Contains(userName));
+
+            if (!string.IsNullOrEmpty(email))
+                query = query.Where(u => u.Email.Contains(email));
+
+            if (from.HasValue)
+                query = query.Where(u => u.CreatedAt >= from.Value.UtcDateTime);
+
+            if (to.HasValue)
+                query = query.Where(u => u.CreatedAt <= to.Value.UtcDateTime);
+
+            if (roleId.HasValue)
+                query = query.Where(u => u.UserRoles.Any(ur => ur.RoleId == roleId.Value));
+
+            if (!string.IsNullOrEmpty(roleName))
+                query = query.Where(u => u.UserRoles.Any(ur => ur.Role.RoleName.Contains(roleName)));
+
+            int totalCount = await query.CountAsync(cToken);
+
+            IEnumerable<User> users = await query
+                .OrderBy(u => u.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cToken);
+
+            return (users, totalCount);
+        }
+
         //Agrega un usuario a la DB
         public async Task AddUserAsync(User user, CancellationToken cToken)
         {
             await _context.Users.AddAsync(user, cToken);
+        }
+
+        //Elimina un usuario de la base de datos
+        public void DeleteUser(User user)
+        {
+            _context.Users.Remove(user);
         }
 
         //Confirma todos los cambios sobre la base de datos
