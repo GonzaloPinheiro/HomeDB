@@ -4,11 +4,10 @@
 	PasswordHelper ph = new PasswordHelper();
 	Console.WriteLine(ph.HashPassword("dummyContrasenha123"));
 
-- Crear migración de base de datos para el sysmtemetrics
-
 - Cambiar los DTOs para seguir la convención(record -> dto de respuesta) y (class -> dto de entrada)
 - Ver que campos en las tablas vale la pena indexar de forma realista
 
+- Modificar el enpoint de eliminar un usuario para(no borrarlo si tiene archivos asociados o borrar también sus archivos)
 
 Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
 Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB
