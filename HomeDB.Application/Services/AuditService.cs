@@ -1,4 +1,4 @@
-﻿using HomeDB.Domain.Common;
+﻿using HomeDB.Application.DTOs;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
@@ -51,6 +51,33 @@ namespace HomeDB.Application.Services
 
             await _auditLogRepository.InsertAsync(entry, cToken);
 
+        }
+
+        //Devuelve los logs de auditoría según los filtros proporcionados en el DTO
+        public async Task<GetAuditLogsResponseDto> GetAuditLogsAsync(GetAuditLogsRequestDto dto, CancellationToken cToken)
+        {
+            //Obtiene los auditlogs
+            var (items, totalCount) = await _auditLogRepository.GetAuditLogsAsync(
+                pageNumber: dto.Page,
+                pageSize: dto.PageSize,
+                from: dto.From,
+                to: dto.To,
+                userId: dto.UserId,
+                username: dto.userName,
+                action: dto.Action,
+                resourceType: dto.ResourceType,
+                cToken: cToken
+            );
+
+            //Devuelve un DTO con los resultados y la información de paginación 
+            return new GetAuditLogsResponseDto
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / dto.PageSize)
+            };
         }
     }
 }

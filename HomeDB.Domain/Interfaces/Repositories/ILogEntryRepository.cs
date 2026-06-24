@@ -12,8 +12,9 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Obtiene una lista de logs filtrados por los parámetros recibidos.
         /// </summary>
-        Task<(IEnumerable<LogEntry> Items, int TotalCount)> GetLogsAsync(string? level, string? operation, DateTimeOffset? from, DateTimeOffset? to,
-                                                                         string? correlationId, int page, int pageSize, CancellationToken cToken);
+        Task<(IEnumerable<LogEntry> Items, int TotalCount)> GetLogsAsync(string? level, string? operation, 
+                                              DateTimeOffset? from, DateTimeOffset? to, string? correlationId, int page, 
+                                              int pageSize, CancellationToken cToken);
         /// <summary>
         /// Obietiene el número de errores y warnings registrados en la última hora y en las últimas 24 horas.
         /// </summary>
