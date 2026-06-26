@@ -9,9 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
-    [Authorize(Roles = nameof(RolesList.Admin))]
+    
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
-    [Route("api/admin")]
+    [Route("api")]
     public class UsersController : ApiControllerBase
     {
         //Variables y objetos globales
@@ -26,7 +26,8 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("users")]
+        [Route("admin/users")]
+        [Authorize(Roles = nameof(RolesList.Admin))]
         public async Task<IActionResult> GetUsersAsync([FromQuery] GetUsersRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos
@@ -48,7 +49,8 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("users/{userId}")]
+        [Route("admin/users/{userId}")]
+        [Authorize(Roles = nameof(RolesList.Admin))]
         public async Task<IActionResult> GetUserByIdAsync(int userId, CancellationToken cToken)
         {
             //Variables y objetos
@@ -69,8 +71,32 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserSummaryDto?>.Success(result));
         }
 
+        [HttpPatch]
+        [Route("users/updateProfile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfileAsync([FromBody] UpdateProfileRequestDto dto, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.UsersController",
+                operation: "UpdateProfileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Actualizar los campos recibidos
+            UpdateProfileResponseDto result = await _usersService.UpdateProfileAsync(userId, dto, cToken);
+
+            //Todo Ok
+            return Ok(ApiObjResponse<UpdateProfileResponseDto>.Success(result));
+        }
+
         [HttpDelete]
-        [Route("users/{userId}")]
+        [Route("admin/users/{userId}")]
+        [Authorize(Roles = nameof(RolesList.Admin))]
         public async Task<IActionResult> DeleteUserAsync(int userId, CancellationToken cToken)
         {
             //Variables y objetos

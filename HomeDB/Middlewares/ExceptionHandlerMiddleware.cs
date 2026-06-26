@@ -102,6 +102,14 @@ namespace HomeDB.Middlewares
                         $"Usuario no encontrado. Path: {path}, Method: {method}"
                     ),
 
+                    RoleNotFoundException rolente => (
+                        StatusCodes.Status404NotFound,
+                        rolente.Message,
+                        ApiErrorCodes.RoleNotFound,
+                        "Warning",
+                        $"Rol no encontrado. Path: {path}, Method: {method}"
+                    ),
+
                     MetricNotFoundException mnfe => (
                          StatusCodes.Status404NotFound,
                          mnfe.Message,
@@ -114,6 +122,13 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status409Conflict,
                         useraee.Message,
                         ApiErrorCodes.UserAlreadyExists,
+                        "Warning",
+                        $"Usuario ya existe. Path: {path}, Method: {method}"
+                    ),
+                    EmailAlreadyExistsException emailaee => (
+                        StatusCodes.Status409Conflict,
+                        emailaee.Message,
+                        ApiErrorCodes.EmailAlreadyExists,
                         "Warning",
                         $"Usuario ya existe. Path: {path}, Method: {method}"
                     ),

@@ -22,6 +22,12 @@ namespace HomeDB.Infrastructure.Repositories
             return await _context.Users.AnyAsync(u => u.Username == username, cToken);
         }
 
+        //Comprueba si ya existe un usuario con ese email
+        public async Task<bool> EmailExistsAsync(string email, CancellationToken cToken)
+        {
+            return await _context.Users.AnyAsync(u => u.Email == email, cToken);
+        }
+
         //Devuelve un usuario por su userId
         public async Task<User?> GetUserByIdAsync(int userId, CancellationToken cToken, bool asNoTracking = true)
         {
@@ -111,6 +117,19 @@ namespace HomeDB.Infrastructure.Repositories
         public async Task AddUserAsync(User user, CancellationToken cToken)
         {
             await _context.Users.AddAsync(user, cToken);
+        }
+        
+        //Edita los campos del perfil del usuario recibidos por parámetro
+        public async Task<User> UpdateProfileAsync(int userId, string? username, string? email, CancellationToken cToken)
+        {
+            User user = await _context.Users.FirstAsync(u => u.Id == userId, cToken);
+
+            //Aplicar los cambios recibidos
+            if (!string.IsNullOrWhiteSpace(username)) user.Username = username;
+            if (!string.IsNullOrWhiteSpace(email)) user.Email = email;
+
+            //Devolver la entidad
+            return user;
         }
 
         //Elimina un usuario de la base de datos

@@ -13,5 +13,6 @@ namespace HomeDB.Domain.Common
         public const string CreateFolder = "CREATE_FOLDER";
         public const string DeleteFolder = "DELETE_FOLDER";
         public const string DeleteUser = "DELETE_USER";
+        public const string UpdateProfile = "UPDATE_PROFILE";
     }
 }

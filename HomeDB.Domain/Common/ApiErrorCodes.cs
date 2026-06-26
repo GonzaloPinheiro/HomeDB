@@ -16,6 +16,8 @@ namespace HomeDB.Domain.Common
         UserNotFound = 1008,
         RateLimitExceeded = 1009,
         MetricNotFound = 1010,
+        EmailAlreadyExists = 1011,
+        RoleNotFound = 1012,
         InternalError = 9999
     }
 }
