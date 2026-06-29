@@ -94,6 +94,14 @@ namespace HomeDB.Middlewares
                         $"Carpeta no vacía. Path: {path}, Method: {method}"
                     ),
 
+                    FolderCyclicReferenceException foldcre => (
+                        StatusCodes.Status400BadRequest,
+                        foldcre.Message,
+                        ApiErrorCodes.FolderCyclicReference,
+                        "Warning",
+                        $"Referencia cíclica en árbol de carpetas. Path: {path}, Method: {method}"
+                    ),
+
                     UserNotFoundException usernte => (
                         StatusCodes.Status404NotFound,
                         usernte.Message,

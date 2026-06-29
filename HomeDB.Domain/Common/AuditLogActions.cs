@@ -11,6 +11,8 @@ namespace HomeDB.Domain.Common
         public const string DownloadFile = "DOWNLOAD_FILE";
         public const string DeleteFile = "DELETE_FILE";
         public const string CreateFolder = "CREATE_FOLDER";
+        public const string ChangeFolderName = "CHANGE_FOLDER_NAME";
+        public const string ChangeParentFolder = "CHANGE_PARENT_FOLDER";
         public const string DeleteFolder = "DELETE_FOLDER";
         public const string DeleteUser = "DELETE_USER";
         public const string UpdateProfile = "UPDATE_PROFILE";

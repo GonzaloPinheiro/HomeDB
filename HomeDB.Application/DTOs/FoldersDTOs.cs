@@ -10,6 +10,13 @@ namespace HomeDB.Application.DTOs
     //DTO para la respuesta de obtener una carpeta
     public record GetFolderResponseDto(int Id, string Name, int? ParentFolderId, int OwnerId, DateTime CreatedAt);
 
+    //DTO para actualizar los campos de una carpeta
+    public class UpdateFolderRequestDto
+    {
+        public string? NewFolderName { get; set; }
+        public int? NewParentFolderId { get; set; }
+    }
+
     //DTO para la respuesta de la eliminación de una carpeta
     public record DeleteFolderResponseDto(int FolderId, string Name);
 }

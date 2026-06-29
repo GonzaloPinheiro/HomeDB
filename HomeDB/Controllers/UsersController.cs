@@ -72,7 +72,7 @@ namespace HomeDB.Controllers
         }
 
         [HttpPatch]
-        [Route("users/updateProfile")]
+        [Route("users/me")]
         [Authorize]
         public async Task<IActionResult> UpdateProfileAsync([FromBody] UpdateProfileRequestDto dto, CancellationToken cToken)
         {

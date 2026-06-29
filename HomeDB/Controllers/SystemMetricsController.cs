@@ -46,7 +46,7 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<SystemMetricsResponseDto>>.Success(history));
         }
 
-        [HttpGet("lastMetric")]
+        [HttpGet("last-metric")]
         public async Task<IActionResult> GetLastMetricAsync(CancellationToken cToken)
         {
             //Variables y objetos

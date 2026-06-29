@@ -11,7 +11,7 @@ namespace HomeDB.Controllers
 {
     [Authorize(Roles = nameof(RolesList.Admin))]
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
-    [Route("api/admin")]
+    [Route("api/admin/logs")]
     public class AdminController : ApiControllerBase
     {
         //Variables y objetos globales
@@ -25,7 +25,7 @@ namespace HomeDB.Controllers
             _logger = logger;
         }
 
-        [HttpGet("logs")]
+        [HttpGet]
         public async Task<IActionResult> GetLogsAsync([FromQuery] GetLogsRequestDto query, CancellationToken cToken)
         {
             //Variables y objetos
@@ -46,7 +46,7 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<GetLogsResponseDto>.Success(result));
         }
 
-        [HttpGet("logs/health")]
+        [HttpGet("health")]
         public async Task<IActionResult> GetHealthAsync(CancellationToken cToken)
         {
             //Variables y objetos
@@ -67,7 +67,7 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<LogHealthResponseDto>.Success(result));
         }
 
-        [HttpGet("logs/errorSummary")]
+        [HttpGet("error-summary")]
         public async Task<IActionResult> GetErrorSummaryAsync([FromQuery] int hours = 24, CancellationToken cToken = default)
         {
             //Variables y objetos
@@ -89,7 +89,7 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<LogErrorSummaryItemDto>>.Success(result));
         }
 
-        [HttpGet("logs/slow-operations")]
+        [HttpGet("slow-operations")]
         public async Task<IActionResult> GetSlowOperationsAsync([FromQuery] long thresholdMs = 2000, CancellationToken cToken = default)
         {
             //Variables y objetos

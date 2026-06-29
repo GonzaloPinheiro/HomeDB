@@ -11,7 +11,7 @@ namespace HomeDB.Controllers
 {
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     [Authorize(Roles = nameof(RolesList.Admin))]
-    [Route("api/admin")]
+    [Route("api/admin/roles")]
     public class RolesController : ApiControllerBase
     {
         //Variables y objetos globales
@@ -26,8 +26,8 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("role")]
-        public async Task<IActionResult> GetRoleAsync([FromQuery]int roleId, CancellationToken cToken)
+        [Route("{roleId}")]
+        public async Task<IActionResult> GetRoleAsync([FromRoute] int roleId, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
@@ -48,7 +48,6 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("roles")]
         public async Task<IActionResult> GetRolesAsync(CancellationToken cToken)
         {
             //Variables y objetos
@@ -71,8 +70,8 @@ namespace HomeDB.Controllers
 
 
         [HttpPatch]
-        [Route("role/description")]
-        public async Task<IActionResult> UpdateRoleDescriptionAsync([FromQuery] int roleId, [FromQuery] string newDescription, CancellationToken cToken)
+        [Route("{roleId}/description")]
+        public async Task<IActionResult> UpdateRoleDescriptionAsync([FromRoute] int roleId, [FromQuery] string newDescription, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();

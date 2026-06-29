@@ -18,6 +18,7 @@ namespace HomeDB.Domain.Common
         MetricNotFound = 1010,
         EmailAlreadyExists = 1011,
         RoleNotFound = 1012,
+        FolderCyclicReference = 1013,
         InternalError = 9999
     }
 }

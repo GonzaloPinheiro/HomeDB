@@ -6,6 +6,7 @@ using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Net;
 
 namespace HomeDB.Controllers
 {
@@ -24,7 +25,6 @@ namespace HomeDB.Controllers
         }
 
         [HttpPost]
-        [Route("create")]
         public async Task<IActionResult> CreateFolderAsync(CreateFolderRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos
@@ -49,7 +49,6 @@ namespace HomeDB.Controllers
 
 
         [HttpGet]
-        [Route("{folderId?}")]
         public async Task<IActionResult> GetFolderAsync([FromQuery] int? folderId, CancellationToken cToken)
         {
             //Variables y objetos
@@ -71,6 +70,29 @@ namespace HomeDB.Controllers
             return StatusCode(200, ApiObjResponse<IEnumerable<GetFolderResponseDto>>.Success(result));
         }
 
+        [HttpPatch]
+        [Route("{folderId}")]
+        public async Task<IActionResult> UpdateFolderAsync([FromRoute] int folderId, [FromBody] UpdateFolderRequestDto dto, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FoldersController",
+                operation: "UpdateFolderAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Actualizar el folder
+            GetFolderResponseDto result = await _foldersService.UpdateFolderAsync(folderId, userId, dto, cToken);
+
+            //Todo Ok
+            return StatusCode(200, ApiObjResponse<GetFolderResponseDto>.Success(result));
+        }
+
 
         [HttpDelete]
         [Route("{folderId}")]
@@ -79,7 +101,6 @@ namespace HomeDB.Controllers
             //Variables y objetos
             string correlationId = GetCorrelationId();
             int userId = GetUserId();
-
 
             //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
             await using OperationLogScope scope = _logger.BeginScope(

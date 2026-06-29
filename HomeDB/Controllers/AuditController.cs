@@ -26,7 +26,7 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("auditLogs")]
+        [Route("audit-logs")]
         public async Task<IActionResult> GetAuditLogsAsync([FromQuery] GetAuditLogsRequestDto query, CancellationToken cToken)
         {
             //Variables y objetos

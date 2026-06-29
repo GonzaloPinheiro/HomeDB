@@ -17,11 +17,16 @@ namespace HomeDB.Infrastructure.Repositories
         }
 
         //Busca un folder por su id
-        public async Task<FolderItem?> GetByIdAsync(int folderId, CancellationToken cToken)
+        public async Task<FolderItem?> GetByIdAsync(int folderId, CancellationToken cToken, bool asNoTracking = true)
         {
-            return await _context.FolderItems
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.Id == folderId, cToken);
+            IQueryable<FolderItem> query = _context.FolderItems;
+
+            //Aplicar AsNoTracking si se especifica
+            if (asNoTracking)
+                query = query.AsNoTracking();
+
+            //Devolver resultado
+            return await query.FirstOrDefaultAsync(f => f.Id == folderId, cToken);
         }
 
         //Busca los folders hijos del folder padre indicado. (Filtra por el ownerId)
@@ -62,6 +67,57 @@ namespace HomeDB.Infrastructure.Repositories
         public async Task SaveChangesAsync(CancellationToken cToken)
         {
             await _context.SaveChangesAsync(cToken);
+        }
+
+        //Comprueba si potentialDescendantId es descendiente de folderId (o el propio folderId).
+        public async Task<bool> IsDescendantAsync(int folderId, int potentialDescendantId, CancellationToken cToken)
+        {
+            int count = await _context.Database
+                .SqlQuery<int>($"""
+                    WITH RECURSIVE descendants AS (
+                        SELECT id FROM folder_items WHERE id = {folderId}
+                        UNION ALL
+                        SELECT f.id FROM folder_items f
+                        INNER JOIN descendants d ON f.parent_folder_id = d.id
+                    )
+                    SELECT CAST(COUNT(1) AS int) AS "Value" FROM descendants WHERE id = {potentialDescendantId}
+                    """)
+                .FirstAsync(cToken);
+
+            return count > 0;
+        }
+
+        //Sube por el árbol desde potentialDescendantId hacia la raíz buscando folderId (menos eficiente: una query por nivel).
+        public async Task<bool> IsDescendantAsync2(int folderId, int potentialDescendantId, CancellationToken cToken)
+        {
+            //Comprueba si son la misma carpeta
+            if (folderId == potentialDescendantId)
+                return true;
+
+            int? currentId = potentialDescendantId;
+
+            //Itera sobre las carpetas padre del potentialDescendantId de forma recursiva hasta llegar a la raiz
+            while (currentId.HasValue)
+            {
+                FolderItem? current = await _context.FolderItems
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.Id == currentId.Value, cToken);
+
+                //Padre referenciado no existe en BD (integridad rota), se trata como raíz
+                //TODO Agregar log o ver que hacer
+                if (current == null)
+                    break;
+
+                //El potentialDescendantId es descendiente de folderId
+                if (current.ParentFolderId == folderId)
+                    return true;
+
+                //Se asigna el parentFolder para seguir iterando
+                currentId = current.ParentFolderId;
+            }
+
+            //No es descendiente
+            return false;
         }
     }
 }

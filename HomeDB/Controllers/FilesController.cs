@@ -24,7 +24,6 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("listFiles")]
         public async Task<IActionResult> ListFilesAsync([FromQuery] int? folderId, CancellationToken cToken)
         {
             //Variables y objetos
@@ -46,7 +45,6 @@ namespace HomeDB.Controllers
         }
 
         [HttpPost]
-        [Route("uploadFile")]
         public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file,
                                                          [FromForm] int? folderId,
                                                           CancellationToken cToken)
@@ -79,7 +77,7 @@ namespace HomeDB.Controllers
         }
 
         [HttpGet]
-        [Route("{id}/downloadFile")]
+        [Route("{id}")]
         public async Task<IActionResult> DownloadFileAsync(int id, CancellationToken cToken)
         {
             //Variables y objetos
@@ -101,7 +99,7 @@ namespace HomeDB.Controllers
         }
 
         [HttpDelete]
-        [Route("{id}/deleteFile")]
+        [Route("{id}")]
         public async Task<IActionResult> DeleteFileAsync(int id, CancellationToken cToken)
         {
             //Variables y objetos
