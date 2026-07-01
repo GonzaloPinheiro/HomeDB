@@ -11,5 +11,8 @@ namespace HomeDB.Domain.Entities
 
         //Navigation property — roles asignados a este usuario
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+        public UserModulePermissions? ModulePermissions { get; set; } //Modulos de usuario
+        public UserSettings? Settings { get; set; } //Configuración de usuario
+        public UserAdminSettings? AdminSettings { get; set; } //Configuración de usuario(modificable solo por administradores)
     }
 }

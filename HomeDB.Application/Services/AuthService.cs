@@ -42,7 +42,7 @@ namespace HomeDB.Application.Services
         public async Task<UserDto> RegisterAsync(RegisterDto dto, string ipAddress, CancellationToken cToken)
         {
             //Comprobar si el username ya existe
-            if (await _userRepository.UsernameExistsAsync(dto.Username, cToken))
+            if (await _userRepository.UserExistsAsync(dto.Username, cToken))
                 throw new UserAlreadyExistsException(dto.Username);
 
             //Hashear la contraseña
@@ -63,6 +63,15 @@ namespace HomeDB.Application.Services
                     RoleId = (int)RolesList.User
                 }
             };
+
+            //Asignarle los settings por defecto
+            user.Settings = new UserSettings();
+
+            //Asignarle los settings de admin por defecto
+            user.AdminSettings = new UserAdminSettings();
+
+            //Asignarle los permisos de los módulos por defecto
+            user.ModulePermissions = new UserModulePermissions();
 
             //Insertar el usuario
             await _userRepository.AddUserAsync(user, cToken);

@@ -1,4 +1,5 @@
-﻿using HomeDB.Application.Services;
+﻿using HomeDB.Application.Options;
+using HomeDB.Application.Services;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Repositories;
@@ -25,6 +26,9 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<IFolderRepository, FolderRepository>();
             services.AddScoped<IAuditLogRepository, AuditLogEntryRepository>();
             services.AddScoped<IRolesRepository, RolesRepository>();
+            services.AddScoped<IUserModulePermissionsRepository, UserModulePermissionsRepository>();
+            services.AddScoped<IUserSettingsRepository, UserSettingsRepository>();
+            services.AddScoped<IUserAdminSettingsRepository, UserAdminSettingsRepository>();
 
             // Storage (+validation)
             services.AddOptions<StorageOptions>()
@@ -41,6 +45,9 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<StatisticsService>();
             services.AddScoped<UsersService>();
             services.AddScoped<RolesService>();
+            services.AddScoped<UserModulePermissionsService>();
+            services.AddScoped<UserSettingsService>();
+            services.AddScoped<UserAdminSettingsService>();
 
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));

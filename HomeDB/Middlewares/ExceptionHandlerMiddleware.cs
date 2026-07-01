@@ -70,6 +70,22 @@ namespace HomeDB.Middlewares
                         $"Archivo no encontrado. Path: {path}, Method: {method}"
                     ),
 
+                    FileTooLargeException ftle => (
+                        StatusCodes.Status413RequestEntityTooLarge,
+                        ftle.Message,
+                        ApiErrorCodes.FileTooLarge,
+                        "Warning",
+                        $"Archivo demasiado grande. Path: {path}, Method: {method}"
+                    ),
+
+                    StorageLimitExceededException slee => (
+                        StatusCodes.Status413RequestEntityTooLarge,
+                        slee.Message,
+                        ApiErrorCodes.StorageLimitExceeded,
+                        "Warning",
+                        $"Cuota de almacenamiento del usuario excedida. Path: {path}, Method: {method}"
+                    ),
+
                     ParentFolderNotFoundException pfnt =>(
                         StatusCodes.Status404NotFound,
                         pfnt.Message,
@@ -125,6 +141,13 @@ namespace HomeDB.Middlewares
                          "Warning",
                          $"No ha sido posible encontrar la métrica indicada. Path: {path}, Method: {method}"
                      ),
+                    UserSettingsNotFoundException usnfe=> (
+                        StatusCodes.Status404NotFound, 
+                        usnfe.Message,
+                        ApiErrorCodes.UserSettingsNotFound,
+                        "Warning",
+                        $"No se han encontrado las configuraciones del usuario. Path: {path}, Method: {method}"
+                    ),
 
                     UserAlreadyExistsException useraee => (
                         StatusCodes.Status409Conflict,
@@ -155,6 +178,23 @@ namespace HomeDB.Middlewares
                         "Warning",
                         $"Refresh token inválido o expirado. Path: {path}, Method: {method}"
                     ),
+
+                    UserModulePermissionsNotFoundException umpnfe => (
+                        StatusCodes.Status404NotFound,
+                        umpnfe.Message,
+                        ApiErrorCodes.PermissionsNotFound,
+                        "Warning",
+                        $"Permisos de módulo no encontrados. Path: {path}, Method: {method}"
+                    ),
+
+                    ModuleAccessDeniedException made => (
+                        StatusCodes.Status403Forbidden,
+                        made.Message,
+                        ApiErrorCodes.Unauthorized,
+                        "Warning",
+                        $"Acceso denegado al módulo. Path: {path}, Method: {method}"
+                    ),
+
                     UnauthorizedException ue => (
                         StatusCodes.Status403Forbidden,
                         ue.Message,

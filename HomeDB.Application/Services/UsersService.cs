@@ -89,15 +89,16 @@ namespace HomeDB.Application.Services
                 throw new UserNotFoundException(userId);
 
             //Comprobar si ya existe un usuario con ese nombre
-            if(dto.Username != null && await _userRepository.UsernameExistsAsync(dto.Username, cToken))
+            if(dto.Username != null && await _userRepository.UserExistsAsync(dto.Username, cToken))
                 throw new UserAlreadyExistsException(dto.Username);
 
             //Comprobar si ya existe una cuenta con ese correo
             if(dto.Email != null && await _userRepository.EmailExistsAsync(dto.Email, cToken))
                 throw new EmailAlreadyExistsException(dto.Email);
 
-            //Modificar los campos recibidos
-            User updatedUser = await _userRepository.UpdateProfileAsync(userId, dto.Username, dto.Email, cToken);
+            // Modificar los campos recibidos
+            if (!string.IsNullOrWhiteSpace(dto.Username)) user.Username = dto.Username;
+            if (!string.IsNullOrWhiteSpace(dto.Email)) user.Email = dto.Email;
 
             //Persistir los cambios en la base de datos
             await _userRepository.SaveChangesAsync(cToken);
@@ -109,8 +110,8 @@ namespace HomeDB.Application.Services
             return new UpdateProfileResponseDto
             (
                userId,
-               updatedUser.Username,
-               updatedUser.Email
+               user.Username,
+               user.Email
             );
         }
 

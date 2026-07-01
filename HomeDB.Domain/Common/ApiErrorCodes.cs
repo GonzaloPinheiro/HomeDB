@@ -19,6 +19,9 @@ namespace HomeDB.Domain.Common
         EmailAlreadyExists = 1011,
         RoleNotFound = 1012,
         FolderCyclicReference = 1013,
+        PermissionsNotFound = 1014,
+        UserSettingsNotFound = 1015,
+        StorageLimitExceeded = 1016,
         InternalError = 9999
     }
 }

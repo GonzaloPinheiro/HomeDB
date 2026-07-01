@@ -32,6 +32,10 @@ namespace HomeDB.Infrastructure.Observability
                 return;
             }
 
+            // Calcular elapsed automáticamente si no viene ya seteado
+            if (entry.DurationMs == 0 && OperationLogScope.CurrentStartTime != DateTimeOffset.MinValue)
+                entry.DurationMs = Convert.ToInt64((DateTimeOffset.UtcNow - OperationLogScope.CurrentStartTime).TotalMilliseconds);
+
             // Delegar al ILogQueue (rápido: encola y devuelve)
             await _logQueue.EnqueueAsync(entry).ConfigureAwait(false);
         }

@@ -13,25 +13,40 @@ namespace HomeDB.Application.Services
         private readonly IFileItemRepository _fileItemRepository;
         private readonly IFolderRepository _folderRepository;
         private readonly AuditService _auditService;
+        private readonly UserAdminSettingsService _userAdminSettingsService;
 
-        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository, IFolderRepository folderRepository, AuditService auditService)
+        public FilesService(IFileStorageService fileStorageService, IFileItemRepository fileItemRepository, IFolderRepository folderRepository, AuditService auditService, UserAdminSettingsService userAdminSettingsService)
         {
             _fileStorageService = fileStorageService;
             _fileItemRepository = fileItemRepository;
             _folderRepository = folderRepository;
             _auditService = auditService;
+            _userAdminSettingsService = userAdminSettingsService;
         }
 
         /// <summary>
         /// Guarda un archivo en el disco del servidor y crea un registro en la base de datos con su metadata. Devuelve un DTO con la información del archivo subido.
         /// </summary>
-        public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request,
-                                                                    int ownerId,
-                                                                    CancellationToken cToken)
+        public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request, int ownerId, CancellationToken cToken)
         {
             //Generar el guid único para el archivo con el mismo formato de extensión del archivo original
             string extension = Path.GetExtension(request.FileName);
             string storedName = Guid.NewGuid().ToString() + extension;
+
+            //Obtener la configuración de administración del usuario para verificar el límite de tamaño de archivo
+            UserAdminSettings effectiveSettings = await _userAdminSettingsService.GetEffectiveSettingsAsync(ownerId, cToken);
+
+            //Comprobar el límite de tamaño de archivo efectivo para el usuario
+            if (effectiveSettings.MaxFileSizeBytes.HasValue && request.SizeBytes > effectiveSettings.MaxFileSizeBytes.Value)
+                throw new FileTooLargeException(request.SizeBytes, effectiveSettings.MaxFileSizeBytes.Value);
+
+            //Comprobar la cuota de almacenamiento total del usuario (solo si tiene límite configurado)
+            if (effectiveSettings.StorageLimitBytes.HasValue)
+            {
+                (int _, long totalSizeBytes, int _) = await _fileItemRepository.GetUserStatsAsync(ownerId, cToken);
+                if (totalSizeBytes + request.SizeBytes > effectiveSettings.StorageLimitBytes.Value)
+                    throw new StorageLimitExceededException(totalSizeBytes + request.SizeBytes, effectiveSettings.StorageLimitBytes.Value);
+            }
 
             //Si se especificó un FolderId, verificar que exista y que pertenezca al usuario que sube el archivo
             if (request.FolderId.HasValue)

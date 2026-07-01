@@ -8,6 +8,7 @@ namespace HomeDB.Infrastructure.Observability
     {
         //Variables y objetos
         private static readonly System.Threading.AsyncLocal<string> _currentCorrelationId = new System.Threading.AsyncLocal<string>();
+        private static readonly System.Threading.AsyncLocal<DateTimeOffset> _currentStartTime = new System.Threading.AsyncLocal<DateTimeOffset>();
         private readonly Logger _logger = null;
         private readonly string _source = string.Empty;
         private readonly string _operation = string.Empty;
@@ -16,6 +17,7 @@ namespace HomeDB.Infrastructure.Observability
         private readonly DateTimeOffset _start = DateTimeOffset.MinValue;
 
         public static string CurrentCorrelationId => _currentCorrelationId.Value!;
+        public static DateTimeOffset CurrentStartTime => _currentStartTime.Value;
 
         #region Constructores
         public OperationLogScope(Logger logger, string source, string operation, string correlationId, string userId)
@@ -27,8 +29,9 @@ namespace HomeDB.Infrastructure.Observability
             _userId = userId;
             _start = DateTimeOffset.UtcNow;
 
-            // Guardar correlationId en AsyncLocal
+            // Guardar correlationId y start time en AsyncLocal
             _currentCorrelationId.Value = _correlationId;
+            _currentStartTime.Value = _start;
 
             //Fire-and-forget; aquí hago fire-and-forget para no bloquear registrando el logg.
             Task _ = _logger.AddAsync(new LogEntry

@@ -1,7 +1,6 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace HomeDB.Infrastructure.Storage
+namespace HomeDB.Application.Options
 {
     //Para la comprobación de la configuración de almacenamiento en el arranque, se necesitan la ruta base y el tamaño máximo de archivo.
     public class StorageOptions
@@ -13,5 +12,8 @@ namespace HomeDB.Infrastructure.Storage
         [Required]
         [Range(1, long.MaxValue, ErrorMessage = "El tamaño máximo de archivo debe ser un valor positivo.")]
         public long? MaxFileSizeBytes { get; set; } = null;
+
+        [Range(1, long.MaxValue, ErrorMessage = "El límite de almacenamiento debe ser un valor positivo.")]
+        public long? StorageLimitBytes { get; set; } = null;
     }
 }

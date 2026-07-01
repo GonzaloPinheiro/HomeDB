@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Interfaces.Services;
+﻿using HomeDB.Application.Options;
+using HomeDB.Domain.Interfaces.Services;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Infrastructure.Storage

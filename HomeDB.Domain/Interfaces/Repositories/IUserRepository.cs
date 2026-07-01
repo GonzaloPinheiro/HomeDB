@@ -1,12 +1,13 @@
 ﻿using HomeDB.Domain.Entities;
-using System.ComponentModel.DataAnnotations;
 
 namespace HomeDB.Domain.Interfaces.Repositories
 {
     public interface IUserRepository
     {
-        //Comrpueba si ya existe un usuario con el nombre indicado
-        Task<bool> UsernameExistsAsync(string username, CancellationToken cToken);
+        //Comrpueba si existe un usuario con el nombre indicado
+        Task<bool> UserExistsAsync(string username, CancellationToken cToken);
+        //Comrpueba si existe un usuario con el ID indicado
+        Task<bool> UserExistsAsync(int userId, CancellationToken cToken);
         //Comrpueba si ya existe una cuenta con el email indicado
         Task<bool> EmailExistsAsync(string email, CancellationToken cToken);
         //Devuelve un usuario buscando por el userId
@@ -23,9 +24,6 @@ namespace HomeDB.Domain.Interfaces.Repositories
 
         //Agrega un nuevo usuario
         Task AddUserAsync(User user, CancellationToken cToken);
-
-        //Actualiza los parámetros del usuario
-        Task<User> UpdateProfileAsync(int userId, string? username, string? email, CancellationToken cToken);
 
         //Elimina un usuario
         void DeleteUser(User user);

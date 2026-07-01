@@ -9,5 +9,7 @@
 
 - Modificar el enpoint de eliminar un usuario para(no borrarlo si tiene archivos asociados o borrar también sus archivos)
 
+- Crear la migración para lo nuevo de UserModulePermisssions y el userModulePermissions de admin
+
 Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
 Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB
