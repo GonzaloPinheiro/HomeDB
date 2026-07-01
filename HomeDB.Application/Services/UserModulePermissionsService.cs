@@ -38,6 +38,23 @@ namespace HomeDB.Application.Services
         }
 
         /// <summary>
+        /// Obtiene los permisos de módulos de un usuario específico.
+        /// </summary>
+        public async Task<UserModulePermissionsResponseDto> GetPermissionsByUserIdAsync(int userId, CancellationToken cToken)
+        {
+            //Verificar que el usuario existe
+            User? user = await _userRepository.GetUserByIdAsync(userId, cToken)
+                ?? throw new UserNotFoundException(userId);
+
+            //Obtener los permisos de módulos del usuario desde el repositorio
+            UserModulePermissions permissions = await _permissionsRepository.GetByUserIdAsync(userId, cToken)
+                ?? throw new UserModulePermissionsNotFoundException(userId);
+
+            //Devolver el DTO de respuesta mapeado desde la entidad UserModulePermissions
+            return MapToDto(permissions);
+        }
+
+        /// <summary>
         /// Actualiza los permisos de módulos de un usuario específico.
         /// </summary>
         public async Task<UserModulePermissionsResponseDto> UpdatePermissionsAsync(int userId, UpdateModulePermissionsRequestDto dto, CancellationToken cToken)

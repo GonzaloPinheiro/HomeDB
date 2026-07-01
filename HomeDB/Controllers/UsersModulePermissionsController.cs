@@ -46,6 +46,28 @@ namespace HomeDB.Controllers
         }
 
 
+        [HttpGet("admin/users/{id:int}/permissions")]
+        [Authorize(Roles = nameof(RolesList.Admin))]
+        public async Task<IActionResult> GetUserPermissionsAsync(int id, CancellationToken cToken)
+        {
+            //Variables y objetos
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Api.Controllers.UserModulePermissionsController",
+                operation: "GetUserPermissionsAsync()",
+                correlationId: GetCorrelationId(),
+                userId: userId.ToString());
+
+            //Obtener los permisos del usuario especificado
+            UserModulePermissionsResponseDto dto = await _permissionsService.GetPermissionsByUserIdAsync(id, cToken);
+
+            //Todo Ok
+            return Ok(ApiObjResponse<UserModulePermissionsResponseDto>.Success(dto));
+        }
+
+
         [HttpPatch("admin/users/{id:int}/permissions")]
         [Authorize(Roles = nameof(RolesList.Admin))]
         public async Task<IActionResult> UpdatePermissionsAsync(int id, [FromBody] UpdateModulePermissionsRequestDto dto, CancellationToken cToken)
