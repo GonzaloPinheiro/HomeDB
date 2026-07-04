@@ -24,5 +24,7 @@ namespace HomeDB.Domain.Interfaces.Services
         /// 
         /// </summary>
         Task<TemperatureSnapshot?> ReadTemperatureAsync(CancellationToken cToken);
+
+        Task<FanStatusSnapshot> ReadFanStatusAsync(CancellationToken cToken);
     }
 }

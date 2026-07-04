@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HomeDB.Controllers
 {
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
-    [Authorize(Roles = nameof(RolesList.Admin))]
+    [Authorize]
+    [RequireModule(AppModules.RoleManagement)]
     [Route("api/admin/roles")]
     public class RolesController : ApiControllerBase
     {
@@ -25,6 +28,9 @@ namespace HomeDB.Controllers
             _rolesService = rolesService;
         }
 
+        /// <summary>
+        /// Obtiene un rol por su ID
+        /// </summary>
         [HttpGet]
         [Route("{roleId}")]
         public async Task<IActionResult> GetRoleAsync([FromRoute] int roleId, CancellationToken cToken)
@@ -47,6 +53,9 @@ namespace HomeDB.Controllers
             return StatusCode(200, ApiObjResponse<RoleResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene la lista de roles existentes en el sistema
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetRolesAsync(CancellationToken cToken)
         {
@@ -69,6 +78,9 @@ namespace HomeDB.Controllers
         }
 
 
+        /// <summary>
+        /// Actualiza la descripción de un rol existente
+        /// </summary>
         [HttpPatch]
         [Route("{roleId}/description")]
         public async Task<IActionResult> UpdateRoleDescriptionAsync([FromRoute] int roleId, [FromQuery] string newDescription, CancellationToken cToken)

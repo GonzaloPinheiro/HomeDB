@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +11,8 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
-    [Authorize(Roles = nameof(RolesList.Admin))]
+    [Authorize]
+    [RequireModule(AppModules.SystemLogs)]
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     [Route("api/admin/logs")]
     public class AdminController : ApiControllerBase
@@ -25,6 +28,9 @@ namespace HomeDB.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Obtiene los logs del sistema según los parámetros de consulta proporcionados
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetLogsAsync([FromQuery] GetLogsRequestDto query, CancellationToken cToken)
         {
@@ -46,6 +52,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<GetLogsResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene el estado de salud de los logs del sistema
+        /// </summary>
         [HttpGet("health")]
         public async Task<IActionResult> GetHealthAsync(CancellationToken cToken)
         {
@@ -67,6 +76,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<LogHealthResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene un resumen de los errores ocurridos en las últimas horas
+        /// </summary>
         [HttpGet("error-summary")]
         public async Task<IActionResult> GetErrorSummaryAsync([FromQuery] int hours = 24, CancellationToken cToken = default)
         {
@@ -89,6 +101,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<LogErrorSummaryItemDto>>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene las operaciones lentas que superan un umbral de duración especificado
+        /// </summary>
         [HttpGet("slow-operations")]
         public async Task<IActionResult> GetSlowOperationsAsync([FromQuery] long thresholdMs = 2000, CancellationToken cToken = default)
         {

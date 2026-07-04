@@ -83,6 +83,12 @@ namespace HomeDB.Infrastructure.Repositories
             _context.FileItems.Remove(fileItem);
         }
 
+        //Comprueba si un usuario tiene archivos asociados en la base de datos
+        public Task<bool> UserHasFilesAsync(int ownerId, CancellationToken cToken)
+        {
+            return _context.FileItems.AnyAsync(f => f.OwnerId == ownerId, cToken);
+        }
+
         //Persistir los cambios en la base de datos
         public async Task SaveChangesAsync(CancellationToken cToken)
         {

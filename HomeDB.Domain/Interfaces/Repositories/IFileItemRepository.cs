@@ -43,6 +43,11 @@ namespace HomeDB.Domain.Interfaces.Repositories
         void DeleteFile(FileItem fileItem);
 
         /// <summary>
+        /// Comprueba si el usuario tiene archivos asociados en la base de datos
+        /// </summary>
+        Task<bool> UserHasFilesAsync(int ownerId, CancellationToken cToken);
+
+        /// <summary>
         /// Confirma los cambios sobre la base de datos
         /// </summary>
         /// <param name="cToken"></param>

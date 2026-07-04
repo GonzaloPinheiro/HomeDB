@@ -2,6 +2,7 @@
 namespace HomeDB.Domain.Entities
 {
     //Entidad que representa en que módulos tiene permisos un usuario.
+    //Cuando se agregue un nuevo modulo, se debe modificar el switch en el HandleRequirementAsync y el enum AppModules para que el módulo pueda ser autorizado.
     public class UserModulePermissions
     {
         public int Id { get; set; } //Clave primaria

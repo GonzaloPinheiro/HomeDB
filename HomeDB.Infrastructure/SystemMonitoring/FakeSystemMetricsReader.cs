@@ -55,5 +55,18 @@ namespace HomeDB.Infrastructure.SystemMonitoring
             double celsius = _random.NextDouble() * 30 + 35;
             return Task.FromResult<TemperatureSnapshot?>(new TemperatureSnapshot(celsius));
         }
+
+        /// <summary>
+        /// Genera un valor de estado del ventilador falso
+        /// </summary>
+        public Task<FanStatusSnapshot?> ReadFanStatusAsync(CancellationToken cToken)
+        {
+            bool isRunning = _random.NextDouble() > 0.5;
+            int rpmSpeed = _random.Next(1000, 3000);
+            int pwmDutyCycle = _random.Next(0, 101);
+            string controlMode = _random.NextDouble() > 0.5 ? "Auto" : "Manual";
+
+            return Task.FromResult<FanStatusSnapshot?>(new FanStatusSnapshot(isRunning, rpmSpeed, pwmDutyCycle, controlMode));
+        }
     }
 }

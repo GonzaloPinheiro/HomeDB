@@ -31,13 +31,15 @@ namespace HomeDB.Application.Services
             MemorySnapshot? memory = await _reader.ReadMemoryAsync(cToken);
             DiskSnapshot? disk = await _reader.ReadDiskAsync(cToken);
             TemperatureSnapshot? temperature = await _reader.ReadTemperatureAsync(cToken);
+            FanStatusSnapshot? fanStatus = await _reader.ReadFanStatusAsync(cToken);
 
             //Crear objeto a insertar en DB
             SystemMetricsEntry entry = new SystemMetricsEntry(
                 cpu,
                 memory,
                 disk,
-                temperature);
+                temperature,
+                fanStatus);
 
             //Guardar las métricas en la DB
             await _repository.InsertAsync(entry, cToken);
@@ -65,7 +67,11 @@ namespace HomeDB.Application.Services
                 lastEntrie.DiskTotalBytes,
                 lastEntrie.DiskUsedBytes,
                 lastEntrie.DiskUsagePercent,
-                lastEntrie.TemperatureCelsius);
+                lastEntrie.TemperatureCelsius,
+                lastEntrie.FanIsRunning,
+                lastEntrie.FanRpmSpeed,
+                lastEntrie.FanPwmDutyCycle,
+                lastEntrie.FanControlMode);
         }
 
         /// <summary>
@@ -90,7 +96,11 @@ namespace HomeDB.Application.Services
                 e.DiskTotalBytes,
                 e.DiskUsedBytes,
                 e.DiskUsagePercent,
-                e.TemperatureCelsius));
+                e.TemperatureCelsius,
+                e.FanIsRunning,
+                e.FanRpmSpeed,
+                e.FanPwmDutyCycle,
+                e.FanControlMode));
         }
 
         /// <summary>

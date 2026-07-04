@@ -42,17 +42,14 @@ namespace HomeDB.Application.Services
         /// </summary>
         public async Task<UserProfileDto> GetProfileForCurrentUserAsync(CancellationToken cToken)
         {
-            //Obtener la configuración del usuario y los límites de administración de manera concurrente
-            Task<UserSettingsResponseDto> settingsTask = GetSettingsForCurrentUserAsync(cToken);
-            Task<UserAdminSettingsResponseDto> limitsTask = _userAdminSettingsService.GetAdminSettingsForCurrentUserAsync(cToken);
-
-            //Esperar a que ambas tareas se completen
-            await Task.WhenAll(settingsTask, limitsTask);
+            //Obtener la configuración del usuario y los límites de administración
+            UserSettingsResponseDto settings = await GetSettingsForCurrentUserAsync(cToken);
+            UserAdminSettingsResponseDto limits = await _userAdminSettingsService.GetAdminSettingsForCurrentUserAsync(cToken);
 
             //Devolver el resultado combinado en un DTO de perfil de usuario
             return new UserProfileDto(
-                Settings: settingsTask.Result,
-                Limits: limitsTask.Result
+                Settings: settings,
+                Limits: limits
             );
         }
 

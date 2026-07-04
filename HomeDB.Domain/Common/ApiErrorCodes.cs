@@ -22,6 +22,7 @@ namespace HomeDB.Domain.Common
         PermissionsNotFound = 1014,
         UserSettingsNotFound = 1015,
         StorageLimitExceeded = 1016,
+        UserHasAssociatedData = 1017,
         InternalError = 9999
     }
 }

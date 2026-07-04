@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,9 +27,13 @@ namespace HomeDB.Controllers
             _usersService = usersService;
         }
 
+        /// <summary>
+        /// Obtiene la lista de usuarios según los filtros proporcionados en el DTO de solicitud.
+        /// </summary>
         [HttpGet]
         [Route("admin/users")]
-        [Authorize(Roles = nameof(RolesList.Admin))]
+        [Authorize]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> GetUsersAsync([FromQuery] GetUsersRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos
@@ -48,9 +54,13 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<GetUsersResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene un usuario por su ID.
+        /// </summary>
         [HttpGet]
         [Route("admin/users/{userId}")]
-        [Authorize(Roles = nameof(RolesList.Admin))]
+        [Authorize]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> GetUserByIdAsync(int userId, CancellationToken cToken)
         {
             //Variables y objetos
@@ -71,6 +81,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserSummaryDto?>.Success(result));
         }
 
+        /// <summary>
+        /// Actualiza el perfil del usuario autenticado con los datos proporcionados en el DTO de solicitud.
+        /// </summary>
         [HttpPatch]
         [Route("users/me")]
         [Authorize]
@@ -94,9 +107,13 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UpdateProfileResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Elimina un usuario por su ID. Solo los administradores pueden realizar esta acción.
+        /// </summary>
         [HttpDelete]
         [Route("admin/users/{userId}")]
         [Authorize(Roles = nameof(RolesList.Admin))]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> DeleteUserAsync(int userId, CancellationToken cToken)
         {
             //Variables y objetos

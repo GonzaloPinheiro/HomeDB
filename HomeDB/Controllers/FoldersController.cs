@@ -1,17 +1,19 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Net;
 
 namespace HomeDB.Controllers
 {
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     [Authorize]
+    [RequireModule(AppModules.Files)]
     [Route("api/folders")]
     public class FoldersController : ApiControllerBase
     {
@@ -24,6 +26,9 @@ namespace HomeDB.Controllers
             _foldersService = foldersService;
         }
 
+        /// <summary>
+        /// Crea un nuevo folder para el usuario.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateFolderAsync(CreateFolderRequestDto dto, CancellationToken cToken)
         {
@@ -47,7 +52,9 @@ namespace HomeDB.Controllers
 
         }
 
-
+        /// <summary>
+        /// Obtiene los folders del usuario. Si se proporciona folderId, obtiene solo ese folder; de lo contrario, obtiene los de la raíz.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetFolderAsync([FromQuery] int? folderId, CancellationToken cToken)
         {
@@ -70,6 +77,9 @@ namespace HomeDB.Controllers
             return StatusCode(200, ApiObjResponse<IEnumerable<GetFolderResponseDto>>.Success(result));
         }
 
+        /// <summary>
+        /// Actualiza un folder existente. Se puede cambiar el nombre y/o el folder padre.
+        /// </summary>
         [HttpPatch]
         [Route("{folderId}")]
         public async Task<IActionResult> UpdateFolderAsync([FromRoute] int folderId, [FromBody] UpdateFolderRequestDto dto, CancellationToken cToken)
@@ -94,6 +104,9 @@ namespace HomeDB.Controllers
         }
 
 
+        /// <summary>
+        /// Elimina un folder existente. Solo se puede eliminar si está vacío (sin subfolders ni archivos).
+        /// </summary>
         [HttpDelete]
         [Route("{folderId}")]
         public async Task<IActionResult> DeleteFolderAsync([FromRoute] int folderId, CancellationToken cToken)

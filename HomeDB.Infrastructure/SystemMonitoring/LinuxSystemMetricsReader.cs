@@ -11,6 +11,7 @@ namespace HomeDB.Infrastructure.SystemMonitoring
         private readonly string _procMemInfoPath;
         private readonly string _thermalZonePath;
         private readonly string _diskRootPath;
+        private readonly string _fanSpeedPath;
 
         private long _previousIdleTime;
         private long _previousTotalTime;
@@ -21,12 +22,15 @@ namespace HomeDB.Infrastructure.SystemMonitoring
             string procStatPath = "/proc/stat",
             string procMemInfoPath = "/proc/meminfo",
             string thermalZonePath = "/sys/class/thermal/thermal_zone0/temp",
-            string diskRootPath = "/")
+            string fanSpeedPath = "/sys/class/hwmon",
+            string diskRootPath = "/"
+            )
         {
             _procStatPath = procStatPath;
             _procMemInfoPath = procMemInfoPath;
             _thermalZonePath = thermalZonePath;
             _diskRootPath = diskRootPath;
+            _fanSpeedPath = fanSpeedPath;
         }
 
         //Lee el uso de la cpu
@@ -191,6 +195,65 @@ namespace HomeDB.Infrastructure.SystemMonitoring
             {
                 return null;
             }
+        }
+
+        //Lee el estado del ventilador del sistema
+        public async Task<FanStatusSnapshot?> ReadFanStatusAsync(CancellationToken cToken)
+        {
+            //Busca el directorio hwmon que contiene los archivos de control del ventilador
+            string? hwmonPath = FindHwmonPath();
+
+            //Si no se encuentra el directorio hwmon, devolvemos null
+            if (hwmonPath is null)
+                return null;
+
+            //Lee los valores de rpm, pwm y pwm_enable desde los archivos correspondientes
+            int? rpm = int.TryParse((await File.ReadAllTextAsync(Path.Combine(hwmonPath, "fan1_input"), cToken)).Trim(), out int rpmVal) ? rpmVal : null;
+            int? pwm = int.TryParse((await File.ReadAllTextAsync(Path.Combine(hwmonPath, "pwm1"), cToken)).Trim(), out int pwmVal) ? pwmVal : null;
+            int? pwmEnable = int.TryParse((await File.ReadAllTextAsync(Path.Combine(hwmonPath, "pwm1_enable"), cToken)).Trim(), out int enableVal) ? enableVal : null;
+
+            //Mapea el valor de pwm_enable a un modo de control legible
+            string controlMode = pwmEnable switch
+            {
+                0 => "off",
+                1 => "manual",
+                2 => "automatic",
+                _ => "unknown"
+            };
+
+            //Devuelve el resultado
+            return new FanStatusSnapshot(
+                isRunning: rpm.HasValue && rpm.Value > 0,
+                rpmSpeed: rpm,
+                pwmDutyCycle: pwm,
+                controlMode: controlMode
+            );
+        }
+
+        //Busca el directorio hwmon que contiene los archivos de control del ventilador
+        private string? FindHwmonPath()
+        {
+            if (!Directory.Exists(_fanSpeedPath))
+                return null;
+
+            foreach (string directory in Directory.GetDirectories(_fanSpeedPath))
+            {
+                string fanFile = Path.Combine(directory, "fan1_input");
+                if (File.Exists(fanFile))
+                    return directory;
+            }
+
+            return null;
+        }
+
+        //Lee un valor entero de un archivo, devolviendo 0 si no se puede leer o parsear
+        private static int ReadIntFromFile(string path)
+        {
+            if (!File.Exists(path))
+                return 0;
+
+            string content = File.ReadAllText(path).Trim();
+            return int.TryParse(content, out int value) ? value : 0;
         }
 
         #region Funciones privadas

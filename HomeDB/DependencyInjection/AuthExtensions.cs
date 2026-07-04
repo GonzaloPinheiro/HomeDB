@@ -1,8 +1,12 @@
-﻿using HomeDB.Common;
+﻿using HomeDB.Application.Authorization.Handlers;
+using HomeDB.Application.Authorization.Requirements;
+using HomeDB.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -75,6 +79,31 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<IJwtService, JwtService>();
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Registra la autorización basada en módulos de la aplicación.
+        /// </summary>
+        /// <param name="services"></param>
+        /// <returns></returns>
+        public static IServiceCollection AddModuleAuthorization(this IServiceCollection services)
+        {
+            //Registrar el manejador de autorización para los requisitos de módulo
+            services.AddScoped<IAuthorizationHandler, ModuleAuthorizationHandler>();
+
+            //Registrar políticas de autorización para cada módulo de la aplicación
+            services.AddAuthorization(options =>
+            {
+                foreach (AppModules module in Enum.GetValues<AppModules>())
+                {
+                    options.AddPolicy($"Module.{module}", policy =>
+                        policy
+                            .RequireAuthenticatedUser()
+                            .AddRequirements(new ModuleRequirement(module)));
+                }
+            });
 
             return services;
         }

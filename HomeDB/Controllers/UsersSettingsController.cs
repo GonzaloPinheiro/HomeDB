@@ -1,6 +1,8 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +26,9 @@ namespace HomeDB.Controllers
         }
 
         #region Acciones de configuración de usuario para el propio usuario
+        /// <summary>
+        /// Obtiene la configuración del usuario actual
+        /// </summary>
         [HttpGet("users/me/settings")]
         [Authorize]
         public async Task<IActionResult> GetMySettings(CancellationToken cToken)
@@ -45,6 +50,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserSettingsResponseDto>.Success(dto));
         }
 
+        /// <summary>
+        /// Actualiza la configuración del usuario actual
+        /// </summary>
         [HttpPatch("users/me/settings")]
         [Authorize]
         public async Task<IActionResult> UpdateMySettings([FromBody] UpdateUserSettingsRequestDto dto,CancellationToken cToken)
@@ -66,6 +74,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserSettingsResponseDto>.Success(result));
         }
 
+        /// <summary>
+        /// Obtiene un resumen del perfil del usuario actual, incluyendo configuración y límites de administración
+        /// </summary>
         [HttpGet("users/me/settings-overview")]
         [Authorize]
         public async Task<IActionResult> GetMySettingsProfile(CancellationToken cToken)
@@ -89,8 +100,12 @@ namespace HomeDB.Controllers
         #endregion
 
         #region Acciones de configuración de usuario para el administrador
+        /// <summary>
+        /// Obtiene la configuración de un usuario específico para el administrador
+        /// </summary>
         [HttpGet("admin/users/{id:int}/settings")]
-        [Authorize(Roles = nameof(RolesList.Admin))]
+        [Authorize]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> GetAdminSettings(int id, CancellationToken cToken)
         {
             //Variables y objetos
@@ -110,8 +125,12 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserAdminSettingsResponseDto>.Success(dto));
         }
 
+        /// <summary>
+        /// Actualiza la configuración de un usuario específico para el administrador
+        /// </summary>
         [HttpPatch("admin/users/{id:int}/settings")]
-        [Authorize(Roles = nameof(RolesList.Admin))]
+        [Authorize]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> UpdateAdminSettings(int id, [FromBody] UpdateUserAdminSettingsRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos

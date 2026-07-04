@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HomeDB.Controllers
 {
     [Route("api/system-metrics")]
-    [Authorize(Roles = nameof(RolesList.Admin))]
+    [Authorize]
+    [RequireModule(AppModules.SystemMonitor)]
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     public class SystemMetricsController : ApiControllerBase
     {
@@ -25,6 +28,9 @@ namespace HomeDB.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Obtiene el historial de métricas del sistema entre dos fechas
+        /// </summary>
         [HttpGet("history")]
         public async Task<IActionResult> GetHistoryAsync([FromQuery] DateTimeOffset from, [FromQuery] DateTimeOffset to, CancellationToken cToken) //TODO Añadir dto entrada con to máximo de 30 días(tiempo que se guardan las métricas)
         {
@@ -46,6 +52,9 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<SystemMetricsResponseDto>>.Success(history));
         }
 
+        /// <summary>
+        /// Obtiene la última métrica del sistema
+        /// </summary>
         [HttpGet("last-metric")]
         public async Task<IActionResult> GetLastMetricAsync(CancellationToken cToken)
         {

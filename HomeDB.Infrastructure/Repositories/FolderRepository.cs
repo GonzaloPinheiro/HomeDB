@@ -63,6 +63,12 @@ namespace HomeDB.Infrastructure.Repositories
             return _context.FolderItems.AnyAsync(f => f.ParentFolderId == folderId, cToken);
         }
 
+        //Comrueba si un usuario tiene folders asociados en la base de datos.
+        public Task<bool> UserHasFoldersAsync(int ownerId, CancellationToken cToken)
+        {
+            return _context.FolderItems.AnyAsync(f => f.OwnerId == ownerId, cToken);
+        }
+
         //Persiste los cambios realizados en la base de datos.
         public async Task SaveChangesAsync(CancellationToken cToken)
         {

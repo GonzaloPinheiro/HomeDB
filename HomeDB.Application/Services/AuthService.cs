@@ -35,10 +35,6 @@ namespace HomeDB.Application.Services
         /// <summary>
         /// Registra el usuario recibido
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
-        /// <exception cref="UserAlreadyExistsException"></exception>
         public async Task<UserDto> RegisterAsync(RegisterDto dto, string ipAddress, CancellationToken cToken)
         {
             //Comprobar si el username ya existe
@@ -89,10 +85,6 @@ namespace HomeDB.Application.Services
         /// <summary>
         /// Realiza el login del usuario recibido, devolviendo un TokenResponseDto con el access token y el refresh token
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidCredentialsException"></exception>
         public async Task<TokenResponseDto> LoginAsync(LoginDto dto, string ipAddress, CancellationToken cToken)
         {
             //TODO Sacar dummy correcto, ver el TODO.txt
@@ -144,10 +136,6 @@ namespace HomeDB.Application.Services
         /// <summary>
         /// Realiza el refresh del token recibido
         /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidProgramException"></exception>
         public async Task<TokenResponseDto> RefreshAsync(RefreshRequestDto dto, CancellationToken cToken)
         {
             //Buscar si existe el refreshToken

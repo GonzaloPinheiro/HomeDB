@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +13,7 @@ namespace HomeDB.Controllers
 {
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     [Authorize]
+    [RequireModule(AppModules.Files)]
     [Route("api/statistics")]
     public class StatisticsController : ApiControllerBase
     {
@@ -25,6 +28,9 @@ namespace HomeDB.Controllers
             _statisticsService = statisticsService;
         }
 
+        /// <summary>
+        /// Obtiene las estadísticas de almacenamiento del usuario autenticado.
+        /// </summary>
         [HttpGet]
         [Route("storage")]
         public async Task<IActionResult> GetStorageStatisticsAsync(CancellationToken cToken)

@@ -35,6 +35,9 @@ builder.Services.AddLoggingInfrastructure();
 // --------------------------- Services & Repositories --------------------------- //
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// --------------------------- Authorization --------------------------- //
+builder.Services.AddModuleAuthorization();
+
 // --------------------------- Health Checks --------------------------- //
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL_HomeDB")!)
@@ -83,6 +86,7 @@ app.UseCors(nameof(CorsNames.AllowFrontend));
 //Activa el rate limiting
 app.UseRateLimiter();
 
+app.UseMiddleware<AuthorizationResultMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

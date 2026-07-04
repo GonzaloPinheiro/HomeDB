@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +11,8 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace HomeDB.Controllers
 {
-    [Authorize(Roles = nameof(RolesList.Admin))]
+    [Authorize]
+    [RequireModule(AppModules.AuditLogs)]
     [EnableRateLimiting(nameof(RateLimiterNames.Global))]
     [Route("api/admin")]
     public class AuditController : ApiControllerBase

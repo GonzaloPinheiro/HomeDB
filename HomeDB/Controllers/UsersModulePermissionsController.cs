@@ -1,7 +1,9 @@
-﻿using HomeDB.Application.DTOs;
+﻿using HomeDB.Application.Authorization.Attributes;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +26,9 @@ namespace HomeDB.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Obtiene los permisos del usuario actual
+        /// </summary>
         [HttpGet("users/me/permissions")]
         [Authorize]
         public async Task<IActionResult> GetMyPermissionsAsync(CancellationToken cToken)
@@ -45,9 +50,12 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserModulePermissionsResponseDto>.Success(dto));
         }
 
-
+        /// <summary>
+        /// Obtiene los permisos de un usuario específico (solo para administradores)
+        /// </summary>
         [HttpGet("admin/users/{id:int}/permissions")]
         [Authorize(Roles = nameof(RolesList.Admin))]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> GetUserPermissionsAsync(int id, CancellationToken cToken)
         {
             //Variables y objetos
@@ -67,9 +75,12 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<UserModulePermissionsResponseDto>.Success(dto));
         }
 
-
+        /// <summary>
+        /// Actualiza los permisos de un usuario específico (solo para administradores)
+        /// </summary>
         [HttpPatch("admin/users/{id:int}/permissions")]
         [Authorize(Roles = nameof(RolesList.Admin))]
+        [RequireModule(AppModules.UserManagement)]
         public async Task<IActionResult> UpdatePermissionsAsync(int id, [FromBody] UpdateModulePermissionsRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos

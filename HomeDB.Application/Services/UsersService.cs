@@ -12,12 +12,16 @@ namespace HomeDB.Application.Services
         //Variables y objetos globales
         private readonly IUserRepository _userRepository;
         private readonly AuditService _auditService;
+        private readonly IFileItemRepository _fileItemRepository;
+        private readonly IFolderRepository _folderRepository;
 
         //Constructores
-        public UsersService(IUserRepository userRepository, AuditService auditService)
+        public UsersService(IUserRepository userRepository, AuditService auditService, IFileItemRepository fileItemRepository, IFolderRepository folderRepository)
         {
             _userRepository = userRepository;
             _auditService = auditService;
+            _fileItemRepository = fileItemRepository;
+            _folderRepository = folderRepository;
         }
 
         //Obtener una lista de usuarios paginada y filtrada según los parámetros de consulta
@@ -129,6 +133,10 @@ namespace HomeDB.Application.Services
             bool targetIsAdmin = user.UserRoles.Any(ur => ur.RoleId == (int)RolesList.Admin);
             if (targetIsAdmin && targetUserId != requestingUserId)
                 throw new UnauthorizedException(requestingUserId, targetUserId);
+
+            //Comprobar si el usuario tiene archivos o carpetas asociados
+            if (await _fileItemRepository.UserHasFilesAsync(targetUserId, cToken) || await _folderRepository.UserHasFoldersAsync(targetUserId, cToken))
+                throw new UserHasAssociatedDataException(targetUserId);
 
             //Eliminar el usuario de la base de datos
             _userRepository.DeleteUser(user);

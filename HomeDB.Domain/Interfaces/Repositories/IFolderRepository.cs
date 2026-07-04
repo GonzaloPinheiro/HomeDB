@@ -48,6 +48,14 @@ namespace HomeDB.Domain.Interfaces.Repositories
         Task<bool> HasSubfoldersAsync(int folderId, CancellationToken cToken);
 
         /// <summary>
+        /// Comprueba si un usuario tiene folders asociados en la base de datos.
+        /// </summary>
+        /// <param name="ownerId"></param>
+        /// <param name="cToken"></param>
+        /// <returns></returns>
+        Task<bool> UserHasFoldersAsync(int ownerId, CancellationToken cToken);
+
+        /// <summary>
         /// Devuelve true si potentialDescendantId es descendiente de folderId (o el propio folderId).
         /// Implementación con CTE recursiva (una sola query).
         /// </summary>

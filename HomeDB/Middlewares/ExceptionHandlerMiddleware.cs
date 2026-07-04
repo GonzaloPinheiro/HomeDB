@@ -126,6 +126,14 @@ namespace HomeDB.Middlewares
                         $"Usuario no encontrado. Path: {path}, Method: {method}"
                     ),
 
+                    UserHasAssociatedDataException uhade => (
+                        StatusCodes.Status409Conflict,
+                        uhade.Message,
+                        ApiErrorCodes.UserHasAssociatedData,
+                        "Warning",
+                        $"Usuario tiene datos asociados y no puede ser eliminado. Path: {path}, Method: {method}"
+                    ),
+
                     RoleNotFoundException rolente => (
                         StatusCodes.Status404NotFound,
                         rolente.Message,
