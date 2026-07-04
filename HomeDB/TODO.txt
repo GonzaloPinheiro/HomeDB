@@ -9,7 +9,5 @@
 
 - Modificar el enpoint de eliminar un usuario para(no borrarlo si tiene archivos asociados o borrar también sus archivos)
 
-- crear migración de para system metrics para el ventilador
-
 Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
 Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB
