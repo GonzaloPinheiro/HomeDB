@@ -109,12 +109,13 @@ namespace HomeDB.Application.Services
             string accesTokenString = _jwtService.GenerateAccessToken(user);
 
             //Generar el refresh token
-            string refreshTokenString = _passwordHelper.HashRefreshToken(_jwtService.GenerateRefreshToken());
+            string refreshTokenPlain = _jwtService.GenerateRefreshToken();
+            string refreshTokenHash = _passwordHelper.HashRefreshToken(refreshTokenPlain);
 
             //Crear objeto a insertar
             RefreshToken refreshToken = new RefreshToken
             {
-                Token = refreshTokenString,
+                Token = refreshTokenHash,
                 UserId = user.Id,
                 ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays)
             };
@@ -130,7 +131,7 @@ namespace HomeDB.Application.Services
 
             //Devolver el Token y el refresh token
             return new TokenResponseDto(accesTokenString, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
-                refreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
+                refreshTokenPlain, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
         }
 
         /// <summary>
@@ -148,16 +149,17 @@ namespace HomeDB.Application.Services
                 throw new InvalidRefreshTokenException();
 
             //Crear el nuevo refresh token
-            string newRefreshTokenString = _passwordHelper.HashRefreshToken(_jwtService.GenerateRefreshToken());
+            string newRefreshTokenPlain = _jwtService.GenerateRefreshToken();
+            string newRefreshTokenHash = _passwordHelper.HashRefreshToken(newRefreshTokenPlain);
 
             //Si existe marcarlo como revoked
             refreshToken.IsRevoked = true;
-            refreshToken.ReplacedByToken = newRefreshTokenString;
+            refreshToken.ReplacedByToken = newRefreshTokenHash;
 
             //Crear el objeto del refreshToken
             RefreshToken newRefreshToken = new RefreshToken
             {
-                Token = newRefreshTokenString,
+                Token = newRefreshTokenHash,
                 UserId = refreshToken.UserId,
                 ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays)
             };
@@ -171,9 +173,9 @@ namespace HomeDB.Application.Services
             //Persistir los cambios en la DB
             await _refreshTokenRepository.SaveChangesAsync(cToken);
 
-            //Devolver los dos tokens
+            //Devolver los dos tokens (refresh en claro, ver arriba)
             return new TokenResponseDto(newAccesTokenRefresh, DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
-                                        newRefreshTokenString, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
+                                        newRefreshTokenPlain, DateTime.UtcNow.AddDays(RefreshTokenExpirationDays));
         }
 
         /// <summary>
