@@ -82,6 +82,32 @@ namespace HomeDB.Controllers
         }
 
         /// <summary>
+        /// Obtiene el propio usuario del jwt.
+        /// </summary>
+        [HttpGet]
+        [Route("users/me")]
+        [Authorize]
+        public async Task<IActionResult> GetOwnUserAsync(CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int currentUserId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.UsersController",
+                operation: "GetOwnUserAsync()",
+                correlationId: correlationId,
+                userId: currentUserId.ToString());
+
+            //Obtener el usuario por su ID
+            UserSummaryDto? result = await _usersService.GetUserByIdAsync(currentUserId, cToken);
+
+            //Devolver resultado (200)
+            return Ok(ApiObjResponse<UserSummaryDto?>.Success(result));
+        }
+
+        /// <summary>
         /// Actualiza el perfil del usuario autenticado con los datos proporcionados en el DTO de solicitud.
         /// </summary>
         [HttpPatch]

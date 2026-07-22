@@ -56,7 +56,8 @@ namespace HomeDB.Controllers
         /// Obtiene los folders del usuario. Si se proporciona folderId, obtiene solo ese folder; de lo contrario, obtiene los de la raíz.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetFolderAsync([FromQuery] int? folderId, CancellationToken cToken)
+        [Route("{folderId:int}")]
+        public async Task<IActionResult> GetFolderAsync([FromRoute] int folderId, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
@@ -71,7 +72,34 @@ namespace HomeDB.Controllers
                 userId: userId.ToString());
 
             //Obtener el foler solicitado.
-            IEnumerable<GetFolderResponseDto> result = await _foldersService.GetFoldersAsync(userId, folderId, cToken);
+            GetFolderResponseDto result = await _foldersService.GetFolderAsync(userId, folderId, cToken);
+
+            //Todo Ok
+            return StatusCode(200, ApiObjResponse<GetFolderResponseDto>.Success(result));
+        }
+
+
+        /// <summary>
+        /// Obtiene los sub folders del usuario. Si se proporciona folderId, obtiene solo ese folder; de lo contrario, obtiene los de la raíz.
+        /// </summary>
+        [HttpGet("subfolders")]
+        [HttpGet("{folderId:int}/subfolders")]
+        public async Task<IActionResult> GetSubFoldersAsync([FromRoute] int? folderId, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FoldersController",
+                operation: "GetSubFoldersAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Obtener el foler solicitado.
+            IEnumerable<GetFolderResponseDto> result = await _foldersService.GetSubFoldersAsync(userId, folderId, cToken);
 
             //Todo Ok
             return StatusCode(200, ApiObjResponse<IEnumerable<GetFolderResponseDto>>.Success(result));
@@ -81,7 +109,7 @@ namespace HomeDB.Controllers
         /// Actualiza un folder existente. Se puede cambiar el nombre y/o el folder padre.
         /// </summary>
         [HttpPatch]
-        [Route("{folderId}")]
+        [Route("{folderId:int}")]
         public async Task<IActionResult> UpdateFolderAsync([FromRoute] int folderId, [FromBody] UpdateFolderRequestDto dto, CancellationToken cToken)
         {
             //Variables y objetos
@@ -108,7 +136,7 @@ namespace HomeDB.Controllers
         /// Elimina un folder existente. Solo se puede eliminar si está vacío (sin subfolders ni archivos).
         /// </summary>
         [HttpDelete]
-        [Route("{folderId}")]
+        [Route("{folderId:int}")]
         public async Task<IActionResult> DeleteFolderAsync([FromRoute] int folderId, CancellationToken cToken)
         {
             //Variables y objetos

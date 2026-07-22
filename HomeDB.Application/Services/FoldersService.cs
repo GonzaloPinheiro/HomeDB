@@ -63,8 +63,21 @@ namespace HomeDB.Application.Services
             );
         }
 
+        public async Task<GetFolderResponseDto> GetFolderAsync(int ownerId, int folderId, CancellationToken cToken)
+        {
+            //Obtener el folder
+            FolderItem? folder = await _folderRepository.GetByIdAsync(folderId, cToken, asNoTracking:false);
+
+            //Comprobar que el folder existe y pertenece al usuario
+            if (folder == null || folder.OwnerId != ownerId)
+                throw new FolderNotFoundException(folderId);
+
+            //Retornar el folder como respuesta
+            return new GetFolderResponseDto(folder.Id, folder.Name, folder.ParentFolderId, folder.OwnerId, folder.CreatedAt);
+        }
+
         //Obtiene las subcarpetas de una carpeta específica de un usuario.
-        public async Task<IEnumerable<GetFolderResponseDto>> GetFoldersAsync(int ownerId, int? parentFolderId, CancellationToken cToken)
+        public async Task<IEnumerable<GetFolderResponseDto>> GetSubFoldersAsync(int ownerId, int? parentFolderId, CancellationToken cToken)
         {
             //Comprobar que el parten folderId es válido y pertenece al usuario
             if (parentFolderId.HasValue)

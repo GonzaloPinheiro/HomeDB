@@ -225,6 +225,13 @@ namespace HomeDB.Middlewares
                         "Warning",
                         $"Argumento nulo. Parámetro: {ane.ParamName}, Path: {path}, Method: {method}"
                     ),
+                    ArgumentException ae => (
+                        StatusCodes.Status400BadRequest,
+                        ae.Message,
+                        ApiErrorCodes.InternalError,
+                        "Warning",
+                        $"Argumento nulo. Parámetro: {ae.ParamName}, Path: {path}, Method: {method}"
+                    ),
                     _ => (
                         StatusCodes.Status500InternalServerError,
                         "Error inesperado del servidor",

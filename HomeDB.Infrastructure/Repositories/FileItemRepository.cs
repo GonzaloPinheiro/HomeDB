@@ -39,6 +39,51 @@ namespace HomeDB.Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(f => f.Id == id, cToken);
         }
 
+        //Busca entre los archivos filtrando por los parámetros recibidos
+        public async Task<(IEnumerable<FileItem> Items, int TotalCount)> SearchFileAsync(
+                    string? query, int ownerId, int? folderId, string? contentType,
+                    long? minSizeBytes, long? maxSizeBytes, DateTime? uploadedFrom, DateTime? uploadedTo,
+                    int pageNumber, int pageSize, CancellationToken cToken)
+        {
+            //Crear la query
+            IQueryable<FileItem> dbQuery = _context.FileItems.AsNoTracking()
+                                                             .Where(f => f.OwnerId == ownerId);
+            //Aplicar los filtros recibidos
+            if (!string.IsNullOrEmpty(query))
+                dbQuery = dbQuery.Where(f => EF.Functions.ILike(f.FileName, $"%{query}%"));
+
+            if (folderId.HasValue)
+                dbQuery = dbQuery.Where(f => f.FolderId == folderId.Value);
+
+            if (!string.IsNullOrEmpty(contentType))
+                dbQuery = dbQuery.Where(f => f.ContentType == contentType);
+
+            if (minSizeBytes.HasValue)
+                dbQuery = dbQuery.Where(f => f.SizeBytes >= minSizeBytes.Value);
+
+            if (maxSizeBytes.HasValue)
+                dbQuery = dbQuery.Where(f => f.SizeBytes <= maxSizeBytes.Value);
+
+            if (uploadedFrom.HasValue)
+                dbQuery = dbQuery.Where(f => f.UploadedAt >= uploadedFrom.Value);
+
+            if (uploadedTo.HasValue)
+                dbQuery = dbQuery.Where(f => f.UploadedAt <= uploadedTo.Value);
+
+            //Contar los elementos encontrados
+            int totalCount = await dbQuery.CountAsync(cToken);
+
+            //Realizar query
+            IEnumerable<FileItem> items = await dbQuery
+                .OrderBy(f => f.FileName)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cToken);
+
+            //Devolver lo encontrado
+            return (items, totalCount);
+        }
+
         //Busca los archivos por su propietario y carpeta (si se especifica)
         public async Task<IEnumerable<FileItem>> GetByOwnerAndFolderAsync(int ownerId, int? folderId, CancellationToken cToken)
         {

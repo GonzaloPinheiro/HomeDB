@@ -89,7 +89,7 @@ namespace HomeDB.Controllers
         /// Descarga un archivo específico por su ID. Devuelve el archivo como una respuesta física con el tipo de contenido y nombre de archivo adecuados.
         /// </summary>
         [HttpGet]
-        [Route("{id}")]
+        [Route("{id:int}")]
         public async Task<IActionResult> DownloadFileAsync(int id, CancellationToken cToken)
         {
             //Variables y objetos
@@ -111,10 +111,60 @@ namespace HomeDB.Controllers
         }
 
         /// <summary>
+        /// Hace una búsqueda entre todos los archivos para los parámetros recibidos
+        /// </summary>
+        [HttpGet]
+        [Route("search")]
+        public async Task<IActionResult> SearchFileAsync([FromQuery]SearchFileRequestDto dto, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "SearchFileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Obtener lo encontrado
+            SearchFilesResponseDto result = await _filesService.SearchFileAsync(userId, dto, cToken);
+
+            //Devolver los arvhivos encontrados
+            return StatusCode(200, ApiObjResponse<SearchFilesResponseDto>.Success(result));
+        }
+
+        /// <summary>
+        /// Actualiza los datos de un archivo específico por su ID. Devuelve un UpdateFileResponseDto con los detalles.
+        /// </summary>
+        [HttpPatch]
+        [Route("{id:int}")]
+        public async Task<IActionResult> UpdateFileAsync(int id, [FromBody] UpdateFileRequestDto dto, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "UpdateFileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Actualizar el archivo
+            UpdateFileResponseDto result = await _filesService.UpdateFileAsync(id, dto, userId, cToken);
+
+            //Devolver resultado (200)
+            return Ok(ApiObjResponse<UpdateFileResponseDto>.Success(result));
+        }
+
+        /// <summary>
         /// Elimina un archivo específico por su ID. Devuelve un objeto de respuesta que indica si la eliminación fue exitosa.
         /// </summary>
         [HttpDelete]
-        [Route("{id}")]
+        [Route("{id:int}")]
         public async Task<IActionResult> DeleteFileAsync(int id, CancellationToken cToken)
         {
             //Variables y objetos

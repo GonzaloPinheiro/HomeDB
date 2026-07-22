@@ -64,7 +64,7 @@ namespace HomeDB.Application.Services
                 //Guardar el archivo en el disco del servicor
                 await _fileStorageService.SaveAsync(request.FileStream, storedName, cToken);
 
-                //Crear el registro en la base de datos
+                //Crear el registro para la base de datos
                 FileItem fileItem = new FileItem
                 {
                     FileName = request.FileName,
@@ -137,6 +137,67 @@ namespace HomeDB.Application.Services
 
             //Todo Ok
             return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+        }
+
+        /// <summary>
+        /// Busca una serie de files del usuario filtrando por lo recibido en el dto
+        /// </summary>
+        public async Task<SearchFilesResponseDto> SearchFileAsync(int userId, SearchFileRequestDto dto, CancellationToken cToken)
+        {
+            //Filtros
+            if (!string.IsNullOrEmpty(dto.FileName) && dto.FileName.Length < 2)
+                throw new ArgumentException("El término de búsqueda (FileName) debe tener al menos 2 caracteres.");
+
+            //Buscar los files que coincidan
+            (IEnumerable<FileItem> items, int totalCount) = await _fileItemRepository.SearchFileAsync(
+                dto.FileName,
+                userId,
+                dto.FolderId,
+                dto.ContentType,
+                dto.MinSizeBytes,
+                dto.MaxSizeBytes,
+                dto.UploadedFrom,
+                dto.UploadedTo,
+                dto.Page,
+                dto.PageSize,
+                cToken);
+
+            //Crear lista de respuesta
+            IEnumerable<GetFileItemDto> dtoItems = items.Select(f => new GetFileItemDto(
+                f.Id, f.FileName, f.SizeBytes, f.ContentType, f.FolderId, f.UploadedAt));
+
+            //Calcular el total de páginas
+            int totalPages = (int)Math.Ceiling((double)totalCount / dto.PageSize);
+
+            //Devolver resultado
+            return new SearchFilesResponseDto(dtoItems, totalCount, dto.Page, dto.PageSize, totalPages);
+        }
+
+        /// <summary>
+        /// Actualiza los datos de un archivo específico por su ID.
+        /// </summary>
+        public async Task<UpdateFileResponseDto> UpdateFileAsync(int fileId, UpdateFileRequestDto dto, int userId, CancellationToken cToken)
+        {
+            //Obtener el fileItem por su id
+            FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken, false);
+
+            //Comprobar si el archivo existe y pertenece al usuario
+            if(fileItem == null || fileItem.OwnerId != userId)
+                throw new FileItemNotFoundException(fileId);
+
+            //Modificar el nombre si se indica uno nuevo
+            if(!string.IsNullOrEmpty(dto.NewFileName))
+                fileItem.FileName = dto.NewFileName;
+
+            //Modificar la carpeta en la que esta (null es la carpeta raiz)
+            fileItem.FolderId = dto.NewFolderId;
+
+            //Persistir los cambios en la base de datos
+            await _fileItemRepository.SaveChangesAsync(cToken);
+
+            //Devolver el objeto mapeado
+            return new UpdateFileResponseDto(fileItem.Id, fileItem.FileName, fileItem.SizeBytes, fileItem.ContentType, 
+                                             fileItem.FolderId, fileItem.OwnerId, fileItem.UploadedAt);
         }
 
         /// <summary>

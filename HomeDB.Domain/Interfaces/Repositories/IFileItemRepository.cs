@@ -7,18 +7,19 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Agrega un nuevo FileItem a la base de datos
         /// </summary>
-        /// <param name="fileItem"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task AddAsync(FileItem fileItem, CancellationToken cToken);
 
         /// <summary>
         /// Busca un FileItem por su Id. Retorna null si no se encuentra
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task<FileItem?> GetByIdAsync(int id, CancellationToken cToken, bool asNoTracking = true);
+
+        /// <summary>
+        /// Busca un FileItem aplicando los filtros recibidos
+        /// </summary>
+        Task<(IEnumerable<FileItem> Items, int TotalCount)> SearchFileAsync(string? fileName, int ownerId, int? folderId, string? contentType,
+                                                    long? minSizeBytes, long? maxSizeBytes, DateTime? uploadedFrom, DateTime? uploadedTo,
+                                                    int pageNumber, int pageSize, CancellationToken cToken);
 
         /// <summary>
         /// Retorna los archivos del usuario en la carpeta indicada.
@@ -29,17 +30,11 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Retorna las estadísticas de almacenamiento para el usuario especificado.
         /// </summary>
-        /// <param name="ownerId"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task<(int TotalFiles, long TotalSizeBytes, int TotalFolders)> GetUserStatsAsync(int ownerId, CancellationToken cToken);
 
         /// <summary>
         /// Elimina el fileItem recibido como parámetro de la base de datos
         /// </summary>
-        /// <param name="fileItem"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         void DeleteFile(FileItem fileItem);
 
         /// <summary>
@@ -50,8 +45,6 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Confirma los cambios sobre la base de datos
         /// </summary>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task SaveChangesAsync(CancellationToken cToken);
     }
 }
