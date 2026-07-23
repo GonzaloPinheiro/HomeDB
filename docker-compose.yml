@@ -3,6 +3,8 @@ services:
     build:
       context: ..
       dockerfile: HomeDB/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     container_name: homedb-api
     ports:
       - "8080:8080"

@@ -3,10 +3,18 @@
 # =============================================================================
 FROM node:20-alpine AS frontend
 WORKDIR /app
-COPY HomeDB_Front/package*.json ./
-RUN npm ci
-COPY HomeDB_Front/ ./
-RUN npm run build
+RUN corepack enable
+
+# VITE_API_URL se inlinea en el bundle en build time (shared/env.ts valida con
+# Zod al cargar el módulo) - a diferencia del front viejo, que la resolvía en
+# runtime. Debe pasarse como build-arg (ver docker-compose.yml).
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
+COPY HomeDB_FrontEnd/package.json HomeDB_FrontEnd/pnpm-lock.yaml HomeDB_FrontEnd/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY HomeDB_FrontEnd/ ./
+RUN pnpm run build
 
 # =============================================================================
 # Etapa 2: compilar y publicar la API

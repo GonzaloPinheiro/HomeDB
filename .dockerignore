@@ -1,4 +1,5 @@
-HomeDB_Front/node_modules
-HomeDB_Front/.git
+HomeDB_FrontEnd/node_modules
+HomeDB_FrontEnd/.git
+HomeDB_FrontEnd/dist
 HomeDB/**/bin
 HomeDB/**/obj
