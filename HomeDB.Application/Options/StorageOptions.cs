@@ -10,8 +10,12 @@ namespace HomeDB.Application.Options
         public string BasePath { get; set; } = string.Empty;
 
         [Required]
+        [MinLength(1, ErrorMessage = "La ruta base de almacenamiento temporalno puede estar vacía.")]
+        public string TempUploadsPath { get; set; } = string.Empty;
+
+        [Required]
         [Range(1, long.MaxValue, ErrorMessage = "El tamaño máximo de archivo debe ser un valor positivo.")]
-        public long? MaxFileSizeBytes { get; set; } = null;
+        public long MaxFileSizeBytes { get; set; }
 
         [Range(1, long.MaxValue, ErrorMessage = "El límite de almacenamiento debe ser un valor positivo.")]
         public long? StorageLimitBytes { get; set; } = null;

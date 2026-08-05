@@ -23,6 +23,16 @@ namespace HomeDB.Domain.Common
         UserSettingsNotFound = 1015,
         StorageLimitExceeded = 1016,
         UserHasAssociatedData = 1017,
+        //Códigos de error relacionados con la subida de archivos
+        UploadSessionNotFound = 1018,
+        UploadIncomplete = 1019,
+        UploadSessionNotActive = 1020,
+        InvalidChunkSize = 1021,
+        InvalidChunkNumber = 1022,
+        AssembledFileSizeMismatch = 1023,
+        InvalidUploadRequest = 1024,
+
+        //Codigos de errores críticos
         InternalError = 9999
     }
 }

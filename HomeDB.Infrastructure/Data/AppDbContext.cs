@@ -20,6 +20,8 @@ namespace HomeDB.Infrastructure.Data
         public DbSet<AuditLogEntry> AuditEntries => Set<AuditLogEntry>(); //Tabla para auditoría de cambios
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>(); //Tabla para tokens de actualización
         public DbSet<SystemMetricsEntry> SystemMetricsEntries => Set<SystemMetricsEntry>(); //Tabla para las métricas del sistema
+        public DbSet<UploadSession> UploadSessions => Set<UploadSession>(); //Tabla para las sesiones de carga de archivos
+        public DbSet<UploadChunk> UploadChunks => Set<UploadChunk>(); //Tabla para los fragmentos de las sesiones de carga de archivos
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +48,27 @@ namespace HomeDB.Infrastructure.Data
                 new Role { Id = 1, RoleName = RolesList.Admin.ToString() },
                 new Role { Id = 2, RoleName = RolesList.User.ToString() }
             );
+
+            //Agregar las tablas de la carpeta "uploads" al esquema "uploads"
+            modelBuilder.Entity<UploadSession>(entity =>
+            {
+                entity.ToTable("upload_sessions", "uploads");
+                entity.HasKey(session => session.Id);
+                entity.HasIndex(session => session.SessionId).IsUnique();
+                entity.Property(session => session.Status).HasConversion<string>();
+            });
+
+            modelBuilder.Entity<UploadChunk>(entity =>
+            {
+                entity.ToTable("upload_chunks", "uploads");
+                entity.HasKey(chunk => chunk.Id);
+                entity.HasIndex(chunk => new { chunk.UploadSessionId, chunk.ChunkNumber }).IsUnique();
+
+                entity.HasOne(chunk => chunk.UploadSession)
+                    .WithMany(session => session.Chunks)
+                    .HasForeignKey(chunk => chunk.UploadSessionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }

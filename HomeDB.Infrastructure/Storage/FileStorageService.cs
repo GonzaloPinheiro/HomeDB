@@ -13,7 +13,7 @@ namespace HomeDB.Infrastructure.Storage
             _storageOptions = options.Value;
         }
 
-        public async Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken)
+        public async Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken) //TODO MODIFICAR PARA ADAPTARLO AL SISTEMA DE CHUNKS Y SU NOMENCLATURA DE NOMBRES DE ARCHIVOS
         {
             //Si no existe el directorio, lo crea
             Directory.CreateDirectory(_storageOptions.BasePath);

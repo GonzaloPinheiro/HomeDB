@@ -1,5 +1,4 @@
-﻿
-using HomeDB.Domain.Common.Snapshots;
+﻿using HomeDB.Domain.Common.Snapshots;
 using HomeDB.Domain.Interfaces.Services;
 
 namespace HomeDB.Infrastructure.SystemMonitoring

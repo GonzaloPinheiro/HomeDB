@@ -218,6 +218,59 @@ namespace HomeDB.Middlewares
                         "Warning",
                         $"Acceso no autorizado. Path: {path}, Method: {method}"
                     ),
+
+                    //Manejo de excepciones relacionadas con sesiones de subida de archivos
+                    UploadSessionNotFoundException usnfe => (
+                        StatusCodes.Status404NotFound,
+                        usnfe.Message,
+                        ApiErrorCodes.UploadSessionNotFound,
+                        "Warning",
+                        $"Sesión de subida no encontrada. Path: {path}, Method: {method}"
+                    ),
+                    IncompleteUploadException iue => (
+                        StatusCodes.Status400BadRequest,
+                        iue.Message,
+                        ApiErrorCodes.UploadIncomplete,
+                        "Warning",
+                        $"Subida incompleta, faltan fragmentos. Path: {path}, Method: {method}"
+                    ),
+                    UploadSessionNotActiveException usnae => (
+                        StatusCodes.Status409Conflict,
+                        usnae.Message,
+                        ApiErrorCodes.UploadSessionNotActive,
+                        "Warning",
+                        $"Sesión de subida ya no está activa. Path: {path}, Method: {method}"
+                    ),
+                    InvalidChunkSizeException icse => (
+                        StatusCodes.Status400BadRequest,
+                        icse.Message,
+                        ApiErrorCodes.InvalidChunkSize,
+                        "Warning",
+                        $"Tamaño de chunk inválido. Path: {path}, Method: {method}"
+                    ),
+                    InvalidChunkNumberException icne => (
+                        StatusCodes.Status400BadRequest,
+                        icne.Message,
+                        ApiErrorCodes.InvalidChunkNumber,
+                        "Warning",
+                        $"Número de chunk fuera de rango. Path: {path}, Method: {method}"
+                    ),
+                    AssembledFileSizeMismatchException afsme => (
+                        StatusCodes.Status500InternalServerError,
+                        afsme.Message,
+                        ApiErrorCodes.AssembledFileSizeMismatch,
+                        "Error",
+                        $"Tamaño del archivo ensamblado no coincide. Path: {path}, Method: {method}"
+                    ),
+                    InvalidUploadRequestException iure => (
+                        StatusCodes.Status400BadRequest,
+                        iure.Message,
+                        ApiErrorCodes.InvalidUploadRequest,
+                        "Warning",
+                        $"Datos de inicio de subida inválidos. Path: {path}, Method: {method}"
+                    ),
+                    //
+
                     ArgumentNullException ane => (
                         StatusCodes.Status400BadRequest,
                         "Parámetro requerido no proporcionado",

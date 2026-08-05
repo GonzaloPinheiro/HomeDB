@@ -1,5 +1,6 @@
 ﻿using HomeDB.Application.Options;
 using HomeDB.Application.Services;
+using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Repositories;
@@ -29,6 +30,8 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<IUserModulePermissionsRepository, UserModulePermissionsRepository>();
             services.AddScoped<IUserSettingsRepository, UserSettingsRepository>();
             services.AddScoped<IUserAdminSettingsRepository, UserAdminSettingsRepository>();
+            services.AddScoped<IUploadSessionRepository, UploadSessionRepository>();
+            services.AddScoped<IUploadChunkRepository, UploadChunkRepository>();
 
             // Storage (+validation)
             services.AddOptions<StorageOptions>()
@@ -36,6 +39,9 @@ namespace HomeDB.DependencyInjection
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
+
+            // Locks en memoria compartidos entre requests: deben vivir como singleton
+            services.AddSingleton<IUploadChunkLockProvider, UploadChunkLockProvider>();
 
             // Servicios de aplicación
             services.AddScoped<AuthService>();
@@ -48,6 +54,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<UserModulePermissionsService>();
             services.AddScoped<UserSettingsService>();
             services.AddScoped<UserAdminSettingsService>();
+            services.AddScoped<UploadService>();
 
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));
