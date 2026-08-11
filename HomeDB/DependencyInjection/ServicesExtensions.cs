@@ -4,6 +4,7 @@ using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Repositories;
+using HomeDB.Infrastructure.Services;
 using HomeDB.Infrastructure.Storage;
 using Microsoft.AspNetCore.Http.Features;
 
@@ -39,6 +40,7 @@ namespace HomeDB.DependencyInjection
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddSingleton<IFileTypeValidator, MimeDetectiveFileTypeValidator>();
 
             // Locks en memoria compartidos entre requests: deben vivir como singleton
             services.AddSingleton<IUploadChunkLockProvider, UploadChunkLockProvider>();
