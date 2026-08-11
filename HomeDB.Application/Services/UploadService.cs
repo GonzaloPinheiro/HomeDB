@@ -272,45 +272,64 @@ namespace HomeDB.Application.Services
             //Crear la ruta completa del archivo ensamblado temporal
             string assembledTempPath = Path.Combine(sessionFolderPath, "assembled.tmp");
 
-            //Concatenar los chunks en orden numérico hacia un único archivo temporal
-            await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
-            {
-                //Iterar sobre los chunks en orden y copiarlos al archivo ensamblado
-                for (int chunkNumber = 1; chunkNumber <= session.TotalChunks; chunkNumber++)
-                {
-                    //Crear la ruta completa del chunk específico
-                    string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{chunkNumber}");
+            long assembledSizeBytes;
+            string extension;
 
-                    //Verificar que el chunk exista antes de intentar leerlo
-                    await using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read))
+            try
+            {
+                //Concatenar los chunks en orden numérico hacia un único archivo temporal
+                await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
+                {
+                    //Iterar sobre los chunks en orden y copiarlos al archivo ensamblado
+                    for (int chunkNumber = 1; chunkNumber <= session.TotalChunks; chunkNumber++)
                     {
-                        await chunkStream.CopyToAsync(outputStream, cToken);
+                        //Crear la ruta completa del chunk específico
+                        string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{chunkNumber}");
+
+                        //Verificar que el chunk exista antes de intentar leerlo
+                        await using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read))
+                        {
+                            await chunkStream.CopyToAsync(outputStream, cToken);
+                        }
                     }
                 }
+
+                //Verificar que el tamaño del archivo ensamblado coincida con el tamaño total esperado
+                assembledSizeBytes = new FileInfo(assembledTempPath).Length;
+
+                //Si el tamaño del archivo ensamblado no coincide con el tamaño total esperado, lanzar una excepción
+                if (assembledSizeBytes != session.TotalSizeBytes)
+                    throw new AssembledFileSizeMismatchException(session.SessionId, session.TotalSizeBytes, assembledSizeBytes);
+
+                //Validar que la extensión del archivo está en la whitelist
+                extension = Path.GetExtension(session.FileName);
+                if (!AllowedExtensions.Whitelist.Contains(extension))
+                    throw new InvalidFileExtensionException(extension);
+
+                //Leer los bytes iniciales del archivo ensamblado para validar el tipo real
+                byte[] headerBytes = new byte[16];
+                await using (FileStream finalStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
+                {
+                    await finalStream.ReadAsync(headerBytes, cToken);
+                }
+
+                //Validar que el contenido del archivo coincide con la extensión declarada
+                if (!_fileTypeValidator.IsValid(session.FileName, headerBytes))
+                    throw new InvalidFileExtensionException(extension);
             }
-
-            //Verificar que el tamaño del archivo ensamblado coincida con el tamaño total esperado
-            long assembledSizeBytes = new FileInfo(assembledTempPath).Length;
-
-            //Si el tamaño del archivo ensamblado no coincide con el tamaño total esperado, lanzar una excepción
-            if (assembledSizeBytes != session.TotalSizeBytes)
-                throw new AssembledFileSizeMismatchException(session.SessionId, session.TotalSizeBytes, assembledSizeBytes);
-
-            //Validar que la extensión del archivo está en la whitelist
-            string extension = Path.GetExtension(session.FileName);
-            if (!AllowedExtensions.Whitelist.Contains(extension))
-                throw new InvalidFileExtensionException(extension);
-
-            //Leer los bytes iniciales del archivo ensamblado para validar el tipo real
-            byte[] headerBytes = new byte[16];
-            await using (FileStream finalStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
+            catch (Exception)
             {
-                await finalStream.ReadAsync(headerBytes, cToken);
-            }
+                //El ensamblado o su validación posterior fallaron.
+                //Cancelar la sesión y limpiar los artefactos temporales para no dejar huérfanos.
+                session.Status = UploadSessionStatus.Cancelled;
+                await _uploadSessionRepository.SaveChangesAsync(CancellationToken.None);
 
-            //Validar que el contenido del archivo coincide con la extensión declarada
-            if (!_fileTypeValidator.IsValid(session.FileName, headerBytes))
-                throw new InvalidFileExtensionException(extension);
+                //Borrar el directorio
+                if (Directory.Exists(sessionFolderPath))
+                    Directory.Delete(sessionFolderPath, recursive: true);
+
+                throw;
+            }
 
             //Generar un nombre único para el archivo final a partir de un GUID y la extensión original del archivo
             string storedName = Guid.NewGuid().ToString() + extension;
