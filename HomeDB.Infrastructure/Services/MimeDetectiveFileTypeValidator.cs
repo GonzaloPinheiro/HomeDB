@@ -2,7 +2,6 @@
 using HomeDB.Domain.Interfaces.Services;
 using MimeDetective;
 using MimeDetective.Definitions;
-using MimeDetective.Definitions.Licensing;
 
 namespace HomeDB.Infrastructure.Services
 {
@@ -11,13 +10,10 @@ namespace HomeDB.Infrastructure.Services
     /// </summary>
     public class MimeDetectiveFileTypeValidator : IFileTypeValidator
     {
-        //Uso personal/no comercial de las definiciones de MimeDetective.Definitions.Exhaustive (licencia de mark0.net TrID)
+        //~4MB de footprint, cubre los formatos binarios de AllowedExtensions.Whitelist
         private static readonly IContentInspector Inspector = new ContentInspectorBuilder()
         {
-            Definitions = new ExhaustiveBuilder
-            {
-                UsageType = UsageType.PersonalNonCommercial
-            }.Build()
+            Definitions = DefaultDefinitions.All()
         }.Build();
 
         public bool IsValid(string fileName, byte[] headerBytes)

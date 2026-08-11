@@ -15,6 +15,9 @@ namespace HomeDB.Application.Services
 {
     public class UploadService
     {
+        //Número de chunk reservado para el lock de finalización de sesión.
+        private const int CompletionLockChunkNumber = 0;
+
         //Variables y objetos globales
         private readonly IUploadSessionRepository _uploadSessionRepository;
         private readonly IFolderRepository _folderRepository;
@@ -191,6 +194,10 @@ namespace HomeDB.Application.Services
                     {
                         session.Status = UploadSessionStatus.Cancelled;
                         await _uploadSessionRepository.SaveChangesAsync(cToken);
+
+                        //Estado terminal ya persistido: liberar los locks de la sesión para no acumularlos indefinidamente.
+                        _lockProvider.ReleaseSessionLocks(session.SessionId);
+
                         throw new FileTooLargeException(session.ReceivedSizeBytes + writtenBytes, session.MaxFileSizeBytes);
                     }
                 }
@@ -251,149 +258,181 @@ namespace HomeDB.Application.Services
             if (session.Status == UploadSessionStatus.Cancelled)
                 throw new UploadSessionNotActiveException(sessionId.ToString());
 
-            //TODO darle una vuelta 
+            //TODO darle una vuelta
             if (session.Status == UploadSessionStatus.Completed)
                 return null;
 
-            //Obtener la lista de chunks recibidos
-            List<int> receivedChunks = await _uploadChunkRepository.GetReceivedChunkNumbersAsync(session.Id, cToken);
-
-            //Comprobar que llegaron todos los chunks
-            bool allChunksRecived = Enumerable.Range(1, session.TotalChunks)
-                .All(n => receivedChunks.Contains(n));
-
-            //Verificar que llegaron todos los chunks
-            if (!allChunksRecived)
-                throw new IncompleteUploadException(session.SessionId, receivedChunks.Count, session.TotalChunks);
-
-            //Crear la ruta de la carpeta temporal para almacenar los chunks de la sesión
-            string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
-
-            //Crear la ruta completa del archivo ensamblado temporal
-            string assembledTempPath = Path.Combine(sessionFolderPath, "assembled.tmp");
-
-            long assembledSizeBytes;
-            string extension;
+            //Lock de finalización a nivel de sesión (chunk reservado 0): evita que dos llamadas a complete concurrentes
+            //ensamblen y persistan el archivo dos veces. No compite con los locks por chunk de ReceiveChunkAsync.
+            SemaphoreSlim completionLock = _lockProvider.GetLock(session.SessionId, CompletionLockChunkNumber);
+            await completionLock.WaitAsync(cToken);
 
             try
             {
-                //Concatenar los chunks en orden numérico hacia un único archivo temporal
-                await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
-                {
-                    //Iterar sobre los chunks en orden y copiarlos al archivo ensamblado
-                    for (int chunkNumber = 1; chunkNumber <= session.TotalChunks; chunkNumber++)
-                    {
-                        //Crear la ruta completa del chunk específico
-                        string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{chunkNumber}");
+                //Releer el estado con el lock ya tomado.
+                session = await _uploadSessionRepository.GetBySessionIdAsync(sessionId, cToken, asNoTracking: false);
+                if (session == null)
+                    throw new UploadSessionNotFoundException(sessionId.ToString());
 
-                        //Verificar que el chunk exista antes de intentar leerlo
-                        await using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read))
+                //Comprobar si la sesión sigue activa.
+                if (session.Status == UploadSessionStatus.Cancelled)
+                    throw new UploadSessionNotActiveException(sessionId.ToString());
+
+                if (session.Status == UploadSessionStatus.Completed)
+                    return null;
+
+                //Obtener la lista de chunks recibidos
+                List<int> receivedChunks = await _uploadChunkRepository.GetReceivedChunkNumbersAsync(session.Id, cToken);
+
+                //Comprobar que llegaron todos los chunks
+                bool allChunksRecived = Enumerable.Range(1, session.TotalChunks)
+                    .All(n => receivedChunks.Contains(n));
+
+                //Verificar que llegaron todos los chunks
+                if (!allChunksRecived)
+                    throw new IncompleteUploadException(session.SessionId, receivedChunks.Count, session.TotalChunks);
+
+                //Crear la ruta de la carpeta temporal para almacenar los chunks de la sesión
+                string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+
+                //Crear la ruta completa del archivo ensamblado temporal
+                string assembledTempPath = Path.Combine(sessionFolderPath, "assembled.tmp");
+
+                long assembledSizeBytes;
+                string extension;
+
+                try
+                {
+                    //Concatenar los chunks en orden numérico hacia un único archivo temporal
+                    await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
+                    {
+                        //Iterar sobre los chunks en orden y copiarlos al archivo ensamblado
+                        for (int chunkNumber = 1; chunkNumber <= session.TotalChunks; chunkNumber++)
                         {
-                            await chunkStream.CopyToAsync(outputStream, cToken);
+                            //Crear la ruta completa del chunk específico
+                            string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{chunkNumber}");
+
+                            //Verificar que el chunk exista antes de intentar leerlo
+                            await using (FileStream chunkStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read))
+                            {
+                                await chunkStream.CopyToAsync(outputStream, cToken);
+                            }
                         }
                     }
+
+                    //Verificar que el tamaño del archivo ensamblado coincida con el tamaño total esperado
+                    assembledSizeBytes = new FileInfo(assembledTempPath).Length;
+
+                    //Si el tamaño del archivo ensamblado no coincide con el tamaño total esperado, lanzar una excepción
+                    if (assembledSizeBytes != session.TotalSizeBytes)
+                        throw new AssembledFileSizeMismatchException(session.SessionId, session.TotalSizeBytes, assembledSizeBytes);
+
+                    //Validar que la extensión del archivo está en la whitelist
+                    extension = Path.GetExtension(session.FileName);
+                    if (!AllowedExtensions.Whitelist.Contains(extension))
+                        throw new InvalidFileExtensionException(extension);
+
+                    //Leer los bytes iniciales del archivo ensamblado para validar el tipo real
+                    byte[] headerBytes = new byte[16];
+                    await using (FileStream finalStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
+                    {
+                        await finalStream.ReadAsync(headerBytes, cToken);
+                    }
+
+                    //Validar que el contenido del archivo coincide con la extensión declarada
+                    if (!_fileTypeValidator.IsValid(session.FileName, headerBytes))
+                        throw new InvalidFileExtensionException(extension);
                 }
-
-                //Verificar que el tamaño del archivo ensamblado coincida con el tamaño total esperado
-                assembledSizeBytes = new FileInfo(assembledTempPath).Length;
-
-                //Si el tamaño del archivo ensamblado no coincide con el tamaño total esperado, lanzar una excepción
-                if (assembledSizeBytes != session.TotalSizeBytes)
-                    throw new AssembledFileSizeMismatchException(session.SessionId, session.TotalSizeBytes, assembledSizeBytes);
-
-                //Validar que la extensión del archivo está en la whitelist
-                extension = Path.GetExtension(session.FileName);
-                if (!AllowedExtensions.Whitelist.Contains(extension))
-                    throw new InvalidFileExtensionException(extension);
-
-                //Leer los bytes iniciales del archivo ensamblado para validar el tipo real
-                byte[] headerBytes = new byte[16];
-                await using (FileStream finalStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
+                catch (Exception)
                 {
-                    await finalStream.ReadAsync(headerBytes, cToken);
+                    //El ensamblado o su validación posterior fallaron.
+                    //Cancelar la sesión y limpiar los artefactos temporales para no dejar huérfanos.
+                    session.Status = UploadSessionStatus.Cancelled;
+                    await _uploadSessionRepository.SaveChangesAsync(CancellationToken.None);
+
+                    //Estado terminal ya persistido: liberar los locks de la sesión para no acumularlos en memoria.
+                    _lockProvider.ReleaseSessionLocks(session.SessionId);
+
+                    //Borrar el directorio
+                    if (Directory.Exists(sessionFolderPath))
+                        Directory.Delete(sessionFolderPath, recursive: true);
+
+                    throw;
                 }
 
-                //Validar que el contenido del archivo coincide con la extensión declarada
-                if (!_fileTypeValidator.IsValid(session.FileName, headerBytes))
-                    throw new InvalidFileExtensionException(extension);
-            }
-            catch (Exception)
-            {
-                //El ensamblado o su validación posterior fallaron.
-                //Cancelar la sesión y limpiar los artefactos temporales para no dejar huérfanos.
-                session.Status = UploadSessionStatus.Cancelled;
-                await _uploadSessionRepository.SaveChangesAsync(CancellationToken.None);
+                //Generar un nombre único para el archivo final a partir de un GUID y la extensión original del archivo
+                string storedName = Guid.NewGuid().ToString() + extension;
 
-                //Borrar el directorio
+                //Objeto a insertar en base de datos
+                FileItem fileItem;
+
+                try
+                {
+                    //Guardar el archivo ensamblado en su ubicación final
+                    await using (FileStream assembledReadStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
+                    {
+                        await _fileStorageService.SaveAsync(assembledReadStream, storedName, cToken);
+                    }
+
+                    FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
+                    if (!contentTypeProvider.TryGetContentType(session.FileName, out string? contentType))
+                        contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
+
+                    //Crear un nuevo FileItem para la base de datos con la información del archivo subido
+                    fileItem = new FileItem
+                    {
+                        FileName = session.FileName,
+                        StoredName = storedName,
+                        SizeBytes = assembledSizeBytes,
+                        ContentType = contentType!,
+                        FolderId = session.FolderId,
+                        OwnerId = ownerId,
+                        UploadedAt = DateTime.UtcNow
+                    };
+
+                    //Guardar el FileItem en la base de datos
+                    await _fileItemRepository.AddAsync(fileItem, cToken);
+
+                    //Marcar la sesión como completada
+                    session.Status = UploadSessionStatus.Completed;
+
+                    //Persistir los cambios en la base de datos
+                    await _fileItemRepository.SaveChangesAsync(cToken);
+                }
+                catch (Exception)
+                {
+                    //Si algo falla antes de comprometer el FileItem en la base de datos, eliminar el archivo final para evitar huérfanos.
+                    //Nota: la sesión sigue en InProgress en la base de datos (el rollback deshizo también el cambio de estado en memoria),
+                    //así que no se liberan los locks: el cliente puede reintentar el complete con los mismos chunks.
+                    await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
+                    throw;
+                }
+
+                //Registrar la acción de subida de archivo en el log de auditoría
+                await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
+                //Eliminar la carpeta temporal de la sesión y todos sus chunks
                 if (Directory.Exists(sessionFolderPath))
                     Directory.Delete(sessionFolderPath, recursive: true);
 
-                throw;
+                //Estado terminal ya persistido: liberar los locks de la sesión para no acumularlos indefinidamente.
+                _lockProvider.ReleaseSessionLocks(session.SessionId);
+
+                //Devolver la información del archivo subido en un DTO de respuesta
+                return new UploadFileResponseDto(
+                    fileItem.Id,
+                    fileItem.FileName,
+                    fileItem.SizeBytes,
+                    fileItem.ContentType,
+                    fileItem.FolderId,
+                    fileItem.OwnerId,
+                    fileItem.UploadedAt
+                );
             }
-
-            //Generar un nombre único para el archivo final a partir de un GUID y la extensión original del archivo
-            string storedName = Guid.NewGuid().ToString() + extension;
-
-            //Objeto a insertar en base de datos
-            FileItem fileItem;
-
-            try
+            finally
             {
-                //Guardar el archivo ensamblado en su ubicación final
-                await using (FileStream assembledReadStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
-                {
-                    await _fileStorageService.SaveAsync(assembledReadStream, storedName, cToken);
-                }
-
-                FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
-                if (!contentTypeProvider.TryGetContentType(session.FileName, out string? contentType))
-                    contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
-
-                //Crear un nuevo FileItem para la base de datos con la información del archivo subido
-                fileItem = new FileItem
-                {
-                    FileName = session.FileName,
-                    StoredName = storedName,
-                    SizeBytes = assembledSizeBytes,
-                    ContentType = contentType!,
-                    FolderId = session.FolderId,
-                    OwnerId = ownerId,
-                    UploadedAt = DateTime.UtcNow
-                };
-
-                //Guardar el FileItem en la base de datos
-                await _fileItemRepository.AddAsync(fileItem, cToken);
-
-                //Marcar la sesión como completada
-                session.Status = UploadSessionStatus.Completed;
-
-                //Persistir los cambios en la base de datos
-                await _fileItemRepository.SaveChangesAsync(cToken);
+                completionLock.Release();
             }
-            catch (Exception)
-            {
-                //Si algo falla antes de comprometer el FileItem en la base de datos, eliminar el archivo final para evitar huérfanos.
-                await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
-                throw;
-            }
-
-            //Registrar la acción de subida de archivo en el log de auditoría
-            await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
-
-            //Eliminar la carpeta temporal de la sesión y todos sus chunks
-            if (Directory.Exists(sessionFolderPath))
-                Directory.Delete(sessionFolderPath, recursive: true);
-
-            //Devolver la información del archivo subido en un DTO de respuesta
-            return new UploadFileResponseDto(
-                fileItem.Id,
-                fileItem.FileName,
-                fileItem.SizeBytes,
-                fileItem.ContentType,
-                fileItem.FolderId,
-                fileItem.OwnerId,
-                fileItem.UploadedAt
-            );
         }
 
         /// <summary>
@@ -416,6 +455,9 @@ namespace HomeDB.Application.Services
             {
                 //Crear la ruta de la carpeta temporal para la sesión específica
                 string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+
+                //Red de seguridad: la sesión ya está en estado terminal, así que sus locks ya no deberían usarse.
+                _lockProvider.ReleaseSessionLocks(session.SessionId);
 
                 try
                 {
