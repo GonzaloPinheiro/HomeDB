@@ -193,11 +193,11 @@ namespace HomeDB.Application.Services
                         await _uploadSessionRepository.SaveChangesAsync(cToken);
                         throw new FileTooLargeException(session.ReceivedSizeBytes + writtenBytes, session.MaxFileSizeBytes);
                     }
-
-                    //Guardar registro de última actividad
-                    session.LastActivityAt = DateTimeOffset.UtcNow;
-                    await _uploadSessionRepository.SaveChangesAsync(cToken);
                 }
+
+                //Guardar registro de última actividad
+                session.LastActivityAt = DateTimeOffset.UtcNow;
+                await _uploadSessionRepository.SaveChangesAsync(cToken);
             }
             catch (Exception)
             {
@@ -334,6 +334,9 @@ namespace HomeDB.Application.Services
             //Generar un nombre único para el archivo final a partir de un GUID y la extensión original del archivo
             string storedName = Guid.NewGuid().ToString() + extension;
 
+            //Objeto a insertar en base de datos
+            FileItem fileItem;
+
             try
             {
                 //Guardar el archivo ensamblado en su ubicación final
@@ -347,7 +350,7 @@ namespace HomeDB.Application.Services
                     contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
 
                 //Crear un nuevo FileItem para la base de datos con la información del archivo subido
-                FileItem fileItem = new FileItem
+                fileItem = new FileItem
                 {
                     FileName = session.FileName,
                     StoredName = storedName,
@@ -366,30 +369,31 @@ namespace HomeDB.Application.Services
 
                 //Persistir los cambios en la base de datos
                 await _fileItemRepository.SaveChangesAsync(cToken);
-
-                //Registrar la acción de subida de archivo en el log de auditoría
-                await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
-
-                //Eliminar la carpeta temporal de la sesión y todos sus chunks
-                Directory.Delete(sessionFolderPath, recursive: true);
-
-                //Devolver la información del archivo subido en un DTO de respuesta
-                return new UploadFileResponseDto(
-                    fileItem.Id,
-                    fileItem.FileName,
-                    fileItem.SizeBytes,
-                    fileItem.ContentType,
-                    fileItem.FolderId,
-                    fileItem.OwnerId,
-                    fileItem.UploadedAt
-                );
             }
             catch (Exception)
             {
-                //Si algo falla tras guardar en disco, eliminar el archivo final para evitar huérfanos.
+                //Si algo falla antes de comprometer el FileItem en la base de datos, eliminar el archivo final para evitar huérfanos.
                 await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
                 throw;
             }
+
+            //Registrar la acción de subida de archivo en el log de auditoría
+            await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
+            //Eliminar la carpeta temporal de la sesión y todos sus chunks
+            if (Directory.Exists(sessionFolderPath))
+                Directory.Delete(sessionFolderPath, recursive: true);
+
+            //Devolver la información del archivo subido en un DTO de respuesta
+            return new UploadFileResponseDto(
+                fileItem.Id,
+                fileItem.FileName,
+                fileItem.SizeBytes,
+                fileItem.ContentType,
+                fileItem.FolderId,
+                fileItem.OwnerId,
+                fileItem.UploadedAt
+            );
         }
 
         /// <summary>
