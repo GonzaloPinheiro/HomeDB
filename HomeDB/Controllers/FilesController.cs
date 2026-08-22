@@ -50,40 +50,44 @@ namespace HomeDB.Controllers
             return Ok(ApiObjResponse<IEnumerable<GetFileItemDto>>.Success(files));
         }
 
-        /// <summary>
-        /// Sube un archivo al servidor. El archivo se envía como multipart/form-data y se puede especificar una carpeta de destino mediante folderId.
-        /// </summary>
-        [HttpPost]
-        public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file,
-                                                         [FromForm] int? folderId,
-                                                          CancellationToken cToken)
-        {
-            //Variables y objetos
-            string correlationId = GetCorrelationId();
-            int userId = GetUserId();
+        #region UploadFileAsync: Desactivado temporalmente
+        //No es útil ya que esta implementada la subida de archivos por chunks en uploadController. Y este controller/servicio no comprueba los magic numbers por lo que no es seguro. Si en un futuro hace falta hay que actualizar la lógica del servicio.
 
-            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
-            await using OperationLogScope scope = _logger.BeginScope(
-                source: "HomeDB.Controllers.FilesController",
-                operation: "UploadFileAsync()",
-                correlationId: correlationId,
-                userId: userId.ToString());
+        ///// <summary>
+        ///// Sube un archivo al servidor. El archivo se envía como multipart/form-data y se puede especificar una carpeta de destino mediante folderId.
+        ///// </summary>
+        //[HttpPost]
+        //public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file,
+        //                                                 [FromForm] int? folderId,
+        //                                                  CancellationToken cToken)
+        //{
+        //    //Variables y objetos
+        //    string correlationId = GetCorrelationId();
+        //    int userId = GetUserId();
 
-            //Crear DTO para el servicio
-            UploadFileRequestDto dto = new UploadFileRequestDto(
-                file.OpenReadStream(),  // Stream sin cargar en memoria
-                file.FileName,          // Nombre original
-                file.Length,            // Tamaño en bytes
-                file.ContentType,       // Tipo MIME
-                folderId                // Carpeta destino
-            );
+        //    //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+        //    await using OperationLogScope scope = _logger.BeginScope(
+        //        source: "HomeDB.Controllers.FilesController",
+        //        operation: "UploadFileAsync()",
+        //        correlationId: correlationId,
+        //        userId: userId.ToString());
 
-            //Subir el archivo
-            UploadFileResponseDto result = await _filesService.UploadFileAsync(dto, userId, cToken);
+        //    //Crear DTO para el servicio
+        //    UploadFileRequestDto dto = new UploadFileRequestDto(
+        //        file.OpenReadStream(),  // Stream sin cargar en memoria
+        //        file.FileName,          // Nombre original
+        //        file.Length,            // Tamaño en bytes
+        //        file.ContentType,       // Tipo MIME
+        //        folderId                // Carpeta destino
+        //    );
 
-            //Devolver resultado
-            return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
-        }
+        //    //Subir el archivo
+        //    UploadFileResponseDto result = await _filesService.UploadFileAsync(dto, userId, cToken);
+
+        //    //Devolver resultado
+        //    return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
+        //}
+        #endregion
 
         /// <summary>
         /// Descarga un archivo específico por su ID. Devuelve el archivo como una respuesta física con el tipo de contenido y nombre de archivo adecuados.

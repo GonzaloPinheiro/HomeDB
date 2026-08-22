@@ -24,89 +24,93 @@ namespace HomeDB.Application.Services
             _userAdminSettingsService = userAdminSettingsService;
         }
 
-        /// <summary>
-        /// Guarda un archivo en el disco del servidor y crea un registro en la base de datos con su metadata. Devuelve un DTO con la información del archivo subido.
-        /// </summary>
-        public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request, int ownerId, CancellationToken cToken)
-        {
-            //Generar el guid único para el archivo con el mismo formato de extensión del archivo original
-            string extension = Path.GetExtension(request.FileName);
-            string storedName = Guid.NewGuid().ToString() + extension;
+        #region UploadFileAsync: Desactualizado
+        //Lógica desactualizada, falta verificación de magic numbers como en la subida por chunks de uploadservice.
 
-            //Obtener la configuración de administración del usuario para verificar el límite de tamaño de archivo
-            UserAdminSettings effectiveSettings = await _userAdminSettingsService.GetEffectiveSettingsAsync(ownerId, cToken);
+        ///// <summary>
+        ///// Guarda un archivo en el disco del servidor y crea un registro en la base de datos con su metadata. Devuelve un DTO con la información del archivo subido.
+        ///// </summary>
+        //public async Task<UploadFileResponseDto> UploadFileAsync(UploadFileRequestDto request, int ownerId, CancellationToken cToken)
+        //{
+        //    //Generar el guid único para el archivo con el mismo formato de extensión del archivo original
+        //    string extension = Path.GetExtension(request.FileName);
+        //    string storedName = Guid.NewGuid().ToString() + extension;
 
-            //Comprobar el límite de tamaño de archivo efectivo para el usuario
-            if (effectiveSettings.MaxFileSizeBytes.HasValue && request.SizeBytes > effectiveSettings.MaxFileSizeBytes.Value)
-                throw new FileTooLargeException(request.SizeBytes, effectiveSettings.MaxFileSizeBytes.Value);
+        //    //Obtener la configuración de administración del usuario para verificar el límite de tamaño de archivo
+        //    UserAdminSettings effectiveSettings = await _userAdminSettingsService.GetEffectiveSettingsAsync(ownerId, cToken);
 
-            //Comprobar la cuota de almacenamiento total del usuario (solo si tiene límite configurado)
-            if (effectiveSettings.StorageLimitBytes.HasValue)
-            {
-                (int _, long totalSizeBytes, int _) = await _fileItemRepository.GetUserStatsAsync(ownerId, cToken);
-                if (totalSizeBytes + request.SizeBytes > effectiveSettings.StorageLimitBytes.Value)
-                    throw new StorageLimitExceededException(totalSizeBytes + request.SizeBytes, effectiveSettings.StorageLimitBytes.Value);
-            }
+        //    //Comprobar el límite de tamaño de archivo efectivo para el usuario
+        //    if (effectiveSettings.MaxFileSizeBytes.HasValue && request.SizeBytes > effectiveSettings.MaxFileSizeBytes.Value)
+        //        throw new FileTooLargeException(request.SizeBytes, effectiveSettings.MaxFileSizeBytes.Value);
 
-            //Si se especificó un FolderId, verificar que exista y que pertenezca al usuario que sube el archivo
-            if (request.FolderId.HasValue)
-            {
-                //Buscar el folder indicado por su id en la base de datos
-                FolderItem? folder = await _folderRepository.GetByIdAsync(request.FolderId.Value, cToken);
+        //    //Comprobar la cuota de almacenamiento total del usuario (solo si tiene límite configurado)
+        //    if (effectiveSettings.StorageLimitBytes.HasValue)
+        //    {
+        //        (int _, long totalSizeBytes, int _) = await _fileItemRepository.GetUserStatsAsync(ownerId, cToken);
+        //        if (totalSizeBytes + request.SizeBytes > effectiveSettings.StorageLimitBytes.Value)
+        //            throw new StorageLimitExceededException(totalSizeBytes + request.SizeBytes, effectiveSettings.StorageLimitBytes.Value);
+        //    }
 
-                //Si no existe el folder o no pertenece al usuario, lanzar una excepción
-                if (folder == null || folder.OwnerId != ownerId)
-                    throw new ParentFolderNotFoundException(request.FolderId.Value);
-            }
+        //    //Si se especificó un FolderId, verificar que exista y que pertenezca al usuario que sube el archivo
+        //    if (request.FolderId.HasValue)
+        //    {
+        //        //Buscar el folder indicado por su id en la base de datos
+        //        FolderItem? folder = await _folderRepository.GetByIdAsync(request.FolderId.Value, cToken);
 
-            try
-            {
-                //Guardar el archivo en el disco del servicor
-                await _fileStorageService.SaveAsync(request.FileStream, storedName, cToken);
+        //        //Si no existe el folder o no pertenece al usuario, lanzar una excepción
+        //        if (folder == null || folder.OwnerId != ownerId)
+        //            throw new ParentFolderNotFoundException(request.FolderId.Value);
+        //    }
 
-                //Crear el registro para la base de datos
-                FileItem fileItem = new FileItem
-                {
-                    FileName = request.FileName,
-                    StoredName = storedName,
-                    SizeBytes = request.SizeBytes,
-                    ContentType = request.ContentType,
-                    FolderId = request.FolderId,
-                    OwnerId = ownerId,
-                    UploadedAt = DateTime.UtcNow
-                };
+        //    try
+        //    {
+        //        //Guardar el archivo en el disco del servicor
+        //        await _fileStorageService.SaveAsync(request.FileStream, storedName, cToken);
 
-                //Guardar el registro en la base de datos
-                await _fileItemRepository.AddAsync(fileItem, cToken);
+        //        //Crear el registro para la base de datos
+        //        FileItem fileItem = new FileItem
+        //        {
+        //            FileName = request.FileName,
+        //            StoredName = storedName,
+        //            SizeBytes = request.SizeBytes,
+        //            ContentType = request.ContentType,
+        //            FolderId = request.FolderId,
+        //            OwnerId = ownerId,
+        //            UploadedAt = DateTime.UtcNow
+        //        };
 
-                //Guardar los cambios en la base de datos del registro del objeto FileItem
-                await _fileItemRepository.SaveChangesAsync(cToken);
+        //        //Guardar el registro en la base de datos
+        //        await _fileItemRepository.AddAsync(fileItem, cToken);
 
-                //Mapear el FileItem a UploadFileResponseDto
-                UploadFileResponseDto response = new UploadFileResponseDto(
-                    fileItem.Id,
-                    fileItem.FileName,
-                    fileItem.SizeBytes,
-                    fileItem.ContentType,
-                    fileItem.FolderId,
-                    fileItem.OwnerId,
-                    fileItem.UploadedAt
-                );
+        //        //Guardar los cambios en la base de datos del registro del objeto FileItem
+        //        await _fileItemRepository.SaveChangesAsync(cToken);
 
-                //AuditLog
-                await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+        //        //Mapear el FileItem a UploadFileResponseDto
+        //        UploadFileResponseDto response = new UploadFileResponseDto(
+        //            fileItem.Id,
+        //            fileItem.FileName,
+        //            fileItem.SizeBytes,
+        //            fileItem.ContentType,
+        //            fileItem.FolderId,
+        //            fileItem.OwnerId,
+        //            fileItem.UploadedAt
+        //        );
 
-                //Todo Ok
-                return response;
-            }
-            catch (Exception)
-            {
-                //Si algo falla, eliminar el archivo del disco para evitar archivos huérfanos
-                await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
-                throw;
-            }
+        //        //AuditLog
+        //        await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
 
-        }
+        //        //Todo Ok
+        //        return response;
+        //    }
+        //    catch (Exception)
+        //    {
+        //        //Si algo falla, eliminar el archivo del disco para evitar archivos huérfanos
+        //        await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
+        //        throw;
+        //    }
+
+        //}
+        #endregion
 
         /// <summary>
         /// Descarga un archivo del disco del servidor verificando que el usuario tenga permiso para acceder a él. 
