@@ -61,6 +61,13 @@ namespace HomeDB.DependencyInjection
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));
 
+            // Limpieza programada de sesiones de upload finalizadas o canceladas
+            services.AddOptions<UploadCleanupOptions>()
+                    .Bind(configuration.GetSection("UploadCleanupOptions"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+            services.AddHostedService<UploadCleanupBackgroundService>(); //Background service
+
             return services;
         }
     }

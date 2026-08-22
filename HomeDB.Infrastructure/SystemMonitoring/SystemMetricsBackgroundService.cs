@@ -21,32 +21,32 @@ namespace HomeDB.Infrastructure.SystemMonitoring
         }
 
         //Se ejecuta al inicio de forma indefinida hasta que se cancele el stoppingToken
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken cToken)
         {
             //Primera captura inmediata al arrancar la app.
-            await CaptureMetricsSafelyAsync(stoppingToken);
-            await PurgeOldEntriesSafelyAsync(stoppingToken);
+            await CaptureMetricsSafelyAsync(cToken);
+            await PurgeOldEntriesSafelyAsync(cToken);
 
             //PeriodicTimer dispara un "tick" cada _sampleInterval.
             using PeriodicTimer timer = new PeriodicTimer(_sampleInterval);
 
             //Esperar a que se active el tick de forma indefinida hasta que stoppingToken lo detenga 
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            while (await timer.WaitForNextTickAsync(cToken))
             {
                 //Captura y limpia las métricas de la base de datos
-                await CaptureMetricsSafelyAsync(stoppingToken);
-                await PurgeOldEntriesSafelyAsync(stoppingToken);
+                await CaptureMetricsSafelyAsync(cToken);
+                await PurgeOldEntriesSafelyAsync(cToken);
             }
         }
 
         //Captura las métricas actuales del sistema y las guarda en la base de datos
-        private async Task CaptureMetricsSafelyAsync(CancellationToken stoppingToken)
+        private async Task CaptureMetricsSafelyAsync(CancellationToken cToken)
         {
             try
             {
                 using IServiceScope scope = _scopeFactory.CreateScope();
                 SystemMetricsService service = scope.ServiceProvider.GetRequiredService<SystemMetricsService>();
-                await service.CaptureAndStoreAsync(stoppingToken);
+                await service.CaptureAndStoreAsync(cToken);
             }
             catch (Exception ex)
             {
@@ -55,13 +55,13 @@ namespace HomeDB.Infrastructure.SystemMonitoring
         }
 
         //Elimina registros mas antiguos de los configurados en appsettings
-        private async Task PurgeOldEntriesSafelyAsync(CancellationToken stoppingToken)
+        private async Task PurgeOldEntriesSafelyAsync(CancellationToken cToken)
         {
             try
             {
                 using IServiceScope scope = _scopeFactory.CreateScope();
                 SystemMetricsService service = scope.ServiceProvider.GetRequiredService<SystemMetricsService>();
-                await service.PurgeOldEntriesAsync(_retentionPeriod, stoppingToken);
+                await service.PurgeOldEntriesAsync(_retentionPeriod, cToken);
             }
             catch (Exception ex)
             {

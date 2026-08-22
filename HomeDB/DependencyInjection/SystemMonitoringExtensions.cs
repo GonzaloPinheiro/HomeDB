@@ -29,8 +29,7 @@ namespace HomeDB.DependencyInjection
                 .Bind(configuration.GetSection("SystemMetrics"))
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-
-            services.AddHostedService<SystemMetricsBackgroundService>();
+            services.AddHostedService<SystemMetricsBackgroundService>(); //Background service
 
             return services;
         }
