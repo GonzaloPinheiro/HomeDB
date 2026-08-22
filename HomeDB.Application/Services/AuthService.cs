@@ -87,17 +87,17 @@ namespace HomeDB.Application.Services
         /// </summary>
         public async Task<TokenResponseDto> LoginAsync(LoginDto dto, string ipAddress, CancellationToken cToken)
         {
-            //TODO Sacar dummy correcto, ver el TODO.txt
-            //const string DummyHash = "TODO";
-
             //Obtener el usuario por su username
             User? user = await _userRepository.GetByUsernameWithRolesAsync(dto.Username, cToken);
 
             //Asegurarse de que el usuario no es null
             if (user == null)
             {
-                //Verificar el hash igualmente para que el tiempo de respuesta sea el mismo, impide ataque por timing para obtener nombres de usuarios.
-                //_passwordHelper.VerifyPassword(dto.Password, DummyHash);
+                //No pasa nada por tenerlo hardcodeado, la longitud del hash ya es pública. 
+                string DummyHash = "uRoEkywQgOigWFso08Yut8S7WAn/N90c9wD6RHpwZTzRcv+jX1m7VcSYD5C1hu05";
+
+                //Verificar el hash igualmente para que el tiempo de respuesta sea el mismo.
+                _passwordHelper.VerifyPassword(dto.Password, DummyHash);
                 throw new InvalidCredentialsException();
             }
             
