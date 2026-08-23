@@ -18,6 +18,7 @@ services:
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN}
     volumes:
       - ./storage:/storage/files
+      - ./logs:/storage/logs
     depends_on:
       db:
         condition: service_healthy
