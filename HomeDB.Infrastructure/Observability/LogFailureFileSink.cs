@@ -23,7 +23,7 @@ namespace HomeDB.Infrastructure.Observability
         /// Vuelca un fallo del pipeline de logs (insert a BD, cola llena, etc.), junto con el
         /// LogEntry afectado, como una línea JSON en el fichero del día correspondiente.
         /// </summary>
-        public async Task WriteAsync(LogFailureType failureType, LogEntry entry, Exception failure, CancellationToken cToken)
+        public async Task WriteAsync(LogFailureType failureType, LogEntry? entry, Exception? failure, CancellationToken cToken)
         {
             try
             {

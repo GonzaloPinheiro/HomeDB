@@ -37,12 +37,14 @@ namespace HomeDB.Infrastructure.Observability
         /// </summary>
         /// <param name="entry"></param>
         /// <returns></returns>
-        public Task EnqueueAsync(LogEntry entry)
+        public async Task EnqueueAsync(LogEntry entry)
         {
             if (entry == null)
             {
-                Console.WriteLine("EnqueueAsync: entry null");
-                return Task.CompletedTask;
+                //No hay LogEntry que adjuntar, pero se deja constancia de que se perdió un log por esta causa.
+                await _failureSink.WriteAsync(LogFailureType.NullEntry, entry, null, CancellationToken.None).ConfigureAwait(false);
+
+                return;
             }
 
             // Rellenar campos derivados aquí, fuera del POCO
@@ -57,10 +59,9 @@ namespace HomeDB.Infrastructure.Observability
             bool escrito = _channel.Writer.TryWrite(entry);
             if (!escrito)
             {
-                Console.WriteLine("La cola de logs está llena. Se descartó un log.");
+                //Cola llena: se guarda el fallo en archivo dentro de la carpeta de logs de la api.
+                await _failureSink.WriteAsync(LogFailureType.QueueFull, entry, null, CancellationToken.None).ConfigureAwait(false);
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
