@@ -68,6 +68,12 @@ namespace HomeDB.DependencyInjection
                     .ValidateOnStart();
             services.AddHostedService<UploadCleanupBackgroundService>(); //Background service
 
+            // Fallback a fichero para logs que no se pudieron persistir en la base de datos
+            services.AddOptions<LogFallbackOptions>()
+                    .Bind(configuration.GetSection("LogFallback"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+
             return services;
         }
     }

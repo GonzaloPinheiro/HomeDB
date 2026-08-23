@@ -16,6 +16,7 @@ namespace HomeDB.DependencyInjection
         public static IServiceCollection AddLoggingInfrastructure(this IServiceCollection services)
         {
             services.AddSingleton<ILogEntryRepository, LogEntryRepository>();
+            services.AddSingleton<LogFailureFileSink>();
             services.AddSingleton<LogBackgroundService>();
 
             services.AddScoped<LogsService>();

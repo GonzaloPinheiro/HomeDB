@@ -9,15 +9,18 @@ namespace HomeDB.Infrastructure.Observability
     {
         private readonly Channel<LogEntry> _channel;
         private readonly ILogEntryRepository _repository;
+        private readonly LogFailureFileSink _failureSink;
 
         /// <summary>
         /// Crea la cola y recibe el repositorio para persistencia.
         /// </summary>
         /// <param name="repository"></param>
+        /// <param name="failureSink"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public LogBackgroundService(ILogEntryRepository repository)
+        public LogBackgroundService(ILogEntryRepository repository, LogFailureFileSink failureSink)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _failureSink = failureSink ?? throw new ArgumentNullException(nameof(failureSink));
 
             BoundedChannelOptions options = new BoundedChannelOptions(10000) //Cantidad máxima de la cola de logs
             {
@@ -30,7 +33,7 @@ namespace HomeDB.Infrastructure.Observability
         }
 
         /// <summary>
-        /// Agrega un log ala cola sin bloquear la petición.
+        /// Agrega un log a la cola sin bloquear la petición.
         /// </summary>
         /// <param name="entry"></param>
         /// <returns></returns>
@@ -80,9 +83,9 @@ namespace HomeDB.Infrastructure.Observability
                         }
                         catch (Exception ex)
                         {
-                            // Manejo simple: escribir en consola y continuar.
-                            Console.WriteLine("Error guardando log: " + ex);
-                            // En producción: retry, DLQ, métricas, etc.
+                            //Fallo el insert, se guarda el fallo en archivo dentro de la carpeta de logs de la api.
+                            //WriteAsync ya es su propia red de seguridad: si ni el fichero funciona, cae a consola.
+                            await _failureSink.WriteAsync(LogFailureType.InsertFailure, item, ex, stoppingToken).ConfigureAwait(false);
                         }
                     }
                 }
@@ -112,7 +115,8 @@ namespace HomeDB.Infrastructure.Observability
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Error flush final de logs: " + ex);
+                        //Fallo el insert durante el flush final; mismo fallback a fichero que en ExecuteAsync.
+                        await _failureSink.WriteAsync(LogFailureType.InsertFailure, item, ex, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
