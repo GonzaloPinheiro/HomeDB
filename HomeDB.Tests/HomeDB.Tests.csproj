@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.30" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.26" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="Respawn" Version="7.0.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
@@ -24,12 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Integration\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\HomeDB.Domain\HomeDB.Domain.csproj" />
     <ProjectReference Include="..\HomeDB.Infrastructure\HomeDB.Infrastructure.csproj" />
+    <ProjectReference Include="..\HomeDB\HomeDB.csproj" />
   </ItemGroup>
 
 </Project>

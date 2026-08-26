@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
 using HomeDB.Application.DTOs.Auth;
 using HomeDB.Domain.Common;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace HomeDB.Tests.Infrastructure
 {
