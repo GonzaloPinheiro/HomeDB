@@ -8,5 +8,7 @@
   <Project Path="../HomeDB.Application/HomeDB.Application.csproj" />
   <Project Path="../HomeDB.Domain/HomeDB.Domain.csproj" />
   <Project Path="../HomeDB.Infrastructure/HomeDB.Infrastructure.csproj" />
+  <Project Path="../HomeDB.Tests/HomeDB.Tests.csproj" Id="5b413477-d5cb-4eaf-8664-3d0379315157" />
+  <Project Path="../Tests/Tests.csproj" Id="2edb3b05-9412-4d80-b08c-a5635078bbe9" />
   <Project Path="HomeDB.csproj" />
 </Solution>

@@ -1,4 +1,5 @@
-﻿using HomeDB.Common;
+﻿using HomeDB.Application.Options;
+using HomeDB.Common;
 using HomeDB.Domain.Common;
 using System.Threading.RateLimiting;
 
@@ -7,42 +8,69 @@ namespace HomeDB.DependencyInjection
     public static class RateLimiterExtensions
     {
         /// <summary>
-        /// Registra las políticas de rate limiting: global (100 req/min por IP)
-        /// y auth (10 req/min por IP) para frenar ataques de fuerza bruta.
+        /// Registra las políticas de rate limiting: global y auth para frenar ataques de fuerza bruta.
         /// </summary>
-        /// <param name="services">Colección de servicios de la aplicación.</param>
-        /// <returns>La misma instancia de <see cref="IServiceCollection"/> para encadenar llamadas.</returns>
-        public static IServiceCollection AddRateLimiterConfiguration(this IServiceCollection services)
+        public static IServiceCollection AddRateLimiterConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
+            //Vincular la configuración de RateLimitingOptions desde appsettings.json
+            services.AddOptions<RateLimitingOptions>()
+                .Bind(configuration.GetSection(RateLimitingOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            //Obtener la configuración de RateLimitingOptions
+            RateLimitingOptions rateLimitingOptions = configuration
+                .GetSection(RateLimitingOptions.SectionName)
+                .Get<RateLimitingOptions>() ?? new RateLimitingOptions();
+
             services.AddRateLimiter(options =>
             {
                 // Global: 100 req/min por IP
                 options.AddPolicy(nameof(RateLimiterNames.Global), context =>
                 {
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    string partitionKey = $"global:{ip}";
+
+                    //Si la política de rate limiting para Global está deshabilitada, no aplicar limitación
+                    if (!rateLimitingOptions.Global.Enabled)
+                    {
+                        return RateLimitPartition.GetNoLimiter(partitionKey);
+                    }
+
                     return RateLimitPartition.GetTokenBucketLimiter(
-                        partitionKey: $"ip:{ip}",
+                        partitionKey: partitionKey,
                         factory: _ => new TokenBucketRateLimiterOptions
                         {
-                            TokenLimit = 100,
-                            TokensPerPeriod = 100,
-                            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                            TokenLimit = rateLimitingOptions.Global.TokenLimit,
+                            TokensPerPeriod = rateLimitingOptions.Global.TokensPerPeriod,
+                            ReplenishmentPeriod = rateLimitingOptions.Global.ReplenishmentPeriod,
                             QueueLimit = 0,
                             AutoReplenishment = true
                         });
                 });
 
-                // Auth: 10 req/min por IP — freno de fuerza bruta
+
+
+                // Auth: 10 req/min por IP
                 options.AddPolicy(nameof(RateLimiterNames.Auth), context =>
                 {
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    string partitionKey = $"auth:{ip}";
+
+                    //Si la política de rate limiting para Auth está deshabilitada, no aplicar limitación
+                    if (!rateLimitingOptions.Auth.Enabled)
+                    {
+                        return RateLimitPartition.GetNoLimiter(partitionKey);
+                    }
+
                     return RateLimitPartition.GetTokenBucketLimiter(
-                        partitionKey: $"auth:{ip}",
+                        partitionKey: partitionKey,
+
                         factory: _ => new TokenBucketRateLimiterOptions
                         {
-                            TokenLimit = 10,
-                            TokensPerPeriod = 10,
-                            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                            TokenLimit = rateLimitingOptions.Auth.TokenLimit,
+                            TokensPerPeriod = rateLimitingOptions.Auth.TokensPerPeriod,
+                            ReplenishmentPeriod = rateLimitingOptions.Auth.ReplenishmentPeriod,
                             QueueLimit = 0,
                             AutoReplenishment = true
                         });

@@ -8,12 +8,14 @@ namespace HomeDB.Infrastructure.Observability
         //Variables y ojetos
         private readonly ILogQueue _logQueue;
         private readonly ILogEntryRepository _logEntryRepository;
+        private readonly LogFailureFileSink _failureSink;
 
         #region Constructores
-        public Logger(ILogEntryRepository logEntryRepository, ILogQueue logQueue)
+        public Logger(ILogEntryRepository logEntryRepository, ILogQueue logQueue, LogFailureFileSink failureSink)
         {
             _logEntryRepository = logEntryRepository ?? throw new ArgumentNullException(nameof(logEntryRepository));
             _logQueue = logQueue ?? throw new ArgumentNullException(nameof(logQueue));
+            _failureSink = failureSink ?? throw new ArgumentNullException(nameof(failureSink));
         }
         #endregion
 
@@ -28,7 +30,9 @@ namespace HomeDB.Infrastructure.Observability
         {
             if (entry == null)
             {
-                Console.WriteLine("En AddAsync(log_entry entry) se ha obtenido un log con estado null");
+                //No hay LogEntry que adjuntar, pero se deja constancia de que se perdió un log por esta causa.
+                await _failureSink.WriteAsync(LogFailureType.NullEntry, entry, null, CancellationToken.None).ConfigureAwait(false);
+
                 return;
             }
 

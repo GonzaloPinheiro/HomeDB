@@ -90,7 +90,7 @@ namespace HomeDB.Controllers
         [EnableRateLimiting(nameof(RateLimiterNames.Auth))]
         [HttpPost]
         [Route("refreshToken")]
-        public async Task<IActionResult> RefreshTokenAsync(RefreshRequestDto dto, CancellationToken cToken)
+        public async Task<IActionResult> RefreshTokenAsync(RefreshRequestDto? dto, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
@@ -104,14 +104,13 @@ namespace HomeDB.Controllers
                 correlationId: correlationId,
                 userId: username);
 
-            //Intentar obtener el refresh token de la cookie si no se proporcionó en el cuerpo de la solicitud
-            if (!string.IsNullOrEmpty(refreshTokenFromCookie))
-            {
-                dto = dto with { RefreshToken = refreshTokenFromCookie };
-            }
+            //Prioriza el refresh token de la cookie; si no hay cookie, usa el del cuerpo (si se envió)
+            string refreshTokenValue = !string.IsNullOrEmpty(refreshTokenFromCookie)
+                ? refreshTokenFromCookie
+                : dto?.RefreshToken ?? string.Empty;
 
             //Registrar el usuario
-            TokenResponseDto result = await _authService.RefreshAsync(dto, cToken);
+            TokenResponseDto result = await _authService.RefreshAsync(new RefreshRequestDto(refreshTokenValue), cToken);
 
             //Rotas las cookies con los nuevos tokens
             AppendAuthCookies(result);
@@ -153,7 +152,7 @@ namespace HomeDB.Controllers
         [HttpPost]
         [Authorize]
         [Route("logout")]
-        public async Task<IActionResult> LogoutAsync(RefreshRequestDto dto, CancellationToken cToken)
+        public async Task<IActionResult> LogoutAsync(RefreshRequestDto? dto, CancellationToken cToken)
         {
             //Variables y objetos
             string correlationId = GetCorrelationId();
@@ -167,14 +166,13 @@ namespace HomeDB.Controllers
                 correlationId: correlationId,
                 userId: username);
 
-            //Intentar obtener el refresh token de la cookie si no se proporcionó en el cuerpo de la solicitud
-            if (!string.IsNullOrEmpty(refreshTokenFromCookie))
-            {
-                dto = dto with { RefreshToken = refreshTokenFromCookie };
-            }
+            //Prioriza el refresh token de la cookie; si no hay cookie, usa el del cuerpo (si se envió)
+            string refreshTokenValue = !string.IsNullOrEmpty(refreshTokenFromCookie)
+                ? refreshTokenFromCookie
+                : dto?.RefreshToken ?? string.Empty;
 
             //Registrar el usuario
-            await _authService.LogoutAsync(dto, cToken);
+            await _authService.LogoutAsync(new RefreshRequestDto(refreshTokenValue), cToken);
 
             //Borrar cookies de autenticación
             DeleteAuthCookies();

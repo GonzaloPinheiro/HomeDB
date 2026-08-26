@@ -39,6 +39,7 @@ namespace HomeDB.Infrastructure.Observability
         /// <returns></returns>
         public async Task EnqueueAsync(LogEntry entry)
         {
+            //Nota: Esto nunca se va a cumplir, la llamada a enqueueAsync hace la misma comprobación, pero se deja por seguridad por si en el futuro se llama de otra forma o lugar.
             if (entry == null)
             {
                 //No hay LogEntry que adjuntar, pero se deja constancia de que se perdió un log por esta causa.

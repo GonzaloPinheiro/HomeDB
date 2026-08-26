@@ -1,5 +1,3 @@
-- Crear un ratelimiter global que englobe a todos los endpoints.
-
 - Sacar valor dummy de contraseña para el login:
 	PasswordHelper ph = new PasswordHelper();
 	Console.WriteLine(ph.HashPassword("dummyContrasenha123"));
@@ -8,6 +6,8 @@
 - Ver que campos en las tablas vale la pena indexar de forma realista
 
 - Modificar el enpoint de eliminar un usuario para(no borrarlo si tiene archivos asociados o borrar también sus archivos)
+
+- Darle una vuelta a si es rentable/seguro tener el mismo diseño para el rate limiter de auth y global. Quizás es mejot un diseño en el que global no se pueda desactivar y auth sí.
 
 Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
 Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB

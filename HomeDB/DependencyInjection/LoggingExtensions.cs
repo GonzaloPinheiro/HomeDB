@@ -32,7 +32,8 @@ namespace HomeDB.DependencyInjection
             {
                 ILogEntryRepository repo = sp.GetRequiredService<ILogEntryRepository>();
                 ILogQueue logQueue = sp.GetRequiredService<ILogQueue>();
-                return new Logger(repo, logQueue);
+                LogFailureFileSink failureSink = sp.GetRequiredService<LogFailureFileSink>();
+                return new Logger(repo, logQueue, failureSink);
             });
 
             return services;

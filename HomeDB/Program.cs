@@ -18,7 +18,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCorsConfiguration(builder.Configuration);
 
 //---------------------------RateLimiter---------------------------//
-builder.Services.AddRateLimiterConfiguration();
+builder.Services.AddRateLimiterConfiguration(builder.Configuration);
 
 //---------------------------SystemMonitoring---------------------------//
 builder.Services.AddSystemMonitoring(builder.Configuration);
