@@ -76,7 +76,7 @@ namespace HomeDB.Infrastructure.Observability
             {
                 while (await _channel.Reader.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
                 {
-                    while (_channel.Reader.TryRead(out LogEntry item))
+                    while (_channel.Reader.TryRead(out LogEntry? item))
                     {
                         try
                         {
@@ -109,7 +109,7 @@ namespace HomeDB.Infrastructure.Observability
 
             while (await _channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                while (_channel.Reader.TryRead(out LogEntry item))
+                while (_channel.Reader.TryRead(out LogEntry? item))
                 {
                     try
                     {

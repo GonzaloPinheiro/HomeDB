@@ -47,8 +47,8 @@ namespace HomeDB.Infrastructure.Observability
         /// <summary>
         /// Comienza un scope de operación que registra entrada y, al disponer, registra salida con duración.
         /// </summary>
-        public OperationLogScope BeginScope(string source, string operation, string correlationId = null, 
-                                            string userId = null)
+        public OperationLogScope BeginScope(string source, string operation, string? correlationId = null,
+                                            string? userId = null)
         {
             OperationLogScope scope = new OperationLogScope(this, source, operation, correlationId, userId);
             return scope;

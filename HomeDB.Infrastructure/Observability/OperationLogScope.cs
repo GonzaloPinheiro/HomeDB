@@ -9,7 +9,7 @@ namespace HomeDB.Infrastructure.Observability
         //Variables y objetos
         private static readonly System.Threading.AsyncLocal<string> _currentCorrelationId = new System.Threading.AsyncLocal<string>();
         private static readonly System.Threading.AsyncLocal<DateTimeOffset> _currentStartTime = new System.Threading.AsyncLocal<DateTimeOffset>();
-        private readonly Logger _logger = null;
+        private readonly Logger _logger;
         private readonly string _source = string.Empty;
         private readonly string _operation = string.Empty;
         private readonly string _correlationId = string.Empty;
@@ -20,13 +20,13 @@ namespace HomeDB.Infrastructure.Observability
         public static DateTimeOffset CurrentStartTime => _currentStartTime.Value;
 
         #region Constructores
-        public OperationLogScope(Logger logger, string source, string operation, string correlationId, string userId)
+        public OperationLogScope(Logger logger, string source, string operation, string? correlationId, string? userId)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _source = source;
             _operation = operation;
             _correlationId = correlationId ?? Guid.NewGuid().ToString(); //si viene null, generaro uno
-            _userId = userId;
+            _userId = userId ?? string.Empty;
             _start = DateTimeOffset.UtcNow;
 
             // Guardar correlationId y start time en AsyncLocal
