@@ -6,7 +6,7 @@ using Microsoft.Net.Http.Headers;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace HomeDB.Tests.Integration
+namespace HomeDB.Tests.Integration.AuthTests
 {
     public sealed class LoginTests : IntegrationTestBase
     {

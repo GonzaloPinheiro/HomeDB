@@ -39,7 +39,8 @@ namespace HomeDB.Tests.Infrastructure
                 Dictionary<string, string?> overrides = new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:PostgreSQL_HomeDB"] = _postgresContainer.GetConnectionString(),
-                    ["RateLimiting:Auth:Enabled"] = "false"
+                    ["RateLimiting:Auth:Enabled"] = "false",
+                    ["RateLimiting:Global:Enabled"] = "false"
                 };
 
                 //Agrega la configuración sobrescrita al builder de configuración

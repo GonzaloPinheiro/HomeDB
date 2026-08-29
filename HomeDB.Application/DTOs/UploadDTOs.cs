@@ -1,4 +1,5 @@
 ﻿
+//TODO Unificar todos los dto de subida de archivos en solo este archivo (HomeDB.Application.DTOs)(HomeDB.Application.DTOs.Files)
 namespace HomeDB.Application.DTOs
 {
     //DTO usado para inicializar una sesión de carga de archivos.
