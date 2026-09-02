@@ -76,7 +76,7 @@ namespace HomeDB.Tests.Integration.AuthTests
             HttpResponseMessage logoutResponse = await Client.PostAsync(LogoutEndpoint, null);
 
             //Comprobar que la respuesta es correcta
-            Assert.Equal(HttpStatusCode.Continue, logoutResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, logoutResponse.StatusCode);
 
             //Intentar hacer refresh con la cookie de refresh ya usada
             HttpResponseMessage refreshResponse = await Client.PostAsync(RefreshEndpoint, null);
