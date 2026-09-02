@@ -1,11 +1,10 @@
-﻿using Microsoft.VisualStudio.TestPlatform.TestHost;
-using HomeDB.Domain.Common;
+﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces;
 using HomeDB.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Respawn;
@@ -33,19 +32,9 @@ namespace HomeDB.Tests.Infrastructure
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             //Configura la cadena de conexión a la base de datos para que apunte al contenedor de PostgreSQL
-            builder.ConfigureAppConfiguration((context, configBuilder) =>
-            {
-                //Sobrescribe la configuración para las pruebas
-                Dictionary<string, string?> overrides = new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:PostgreSQL_HomeDB"] = _postgresContainer.GetConnectionString(),
-                    ["RateLimiting:Auth:Enabled"] = "false",
-                    ["RateLimiting:Global:Enabled"] = "false"
-                };
-
-                //Agrega la configuración sobrescrita al builder de configuración
-                configBuilder.AddInMemoryCollection(overrides);
-            });
+            builder.UseSetting("ConnectionStrings:PostgreSQL_HomeDB", _postgresContainer.GetConnectionString());
+            builder.UseSetting("RateLimiting:Auth:Enabled", "false");
+            builder.UseSetting("RateLimiting:Global:Enabled", "false");
         }
 
         //Implementación de IAsyncLifetime para inicializar el contenedor y Respawner antes de las pruebas

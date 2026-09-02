@@ -105,7 +105,7 @@ namespace HomeDB.Infrastructure.Observability
         /// <returns></returns>
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            _channel.Writer.Complete();
+            _channel.Writer.TryComplete();
 
             while (await _channel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {

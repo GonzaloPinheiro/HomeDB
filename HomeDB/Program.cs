@@ -111,3 +111,6 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+//Hace público el Program generado para que HomeDB.Tests pueda usarlo.
+public partial class Program { }
