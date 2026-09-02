@@ -78,6 +78,7 @@ namespace HomeDB.Controllers
         }
 
 
+
         /// <summary>
         /// Actualiza la descripción de un rol existente
         /// </summary>
