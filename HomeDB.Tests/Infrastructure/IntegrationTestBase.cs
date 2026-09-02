@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using HomeDB.Application.DTOs.Auth;
 using HomeDB.Domain.Common;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace HomeDB.Tests.Infrastructure
 {
@@ -17,7 +18,12 @@ namespace HomeDB.Tests.Infrastructure
         protected IntegrationTestBase(HomeDbApiFactory factory)
         {
             Factory = factory;
-            Client = factory.CreateClient();
+
+            //Crear el cliente https para que las cookies Secure se reenvíen correctamente
+            Client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                BaseAddress = new Uri("https://localhost")
+            });
         }
 
         //Implementación de IAsyncLifetime para inicializar y limpiar la base de datos antes y después de cada prueba

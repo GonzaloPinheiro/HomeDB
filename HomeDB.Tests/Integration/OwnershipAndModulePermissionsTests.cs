@@ -3,6 +3,7 @@ using HomeDB.Application.DTOs.Auth;
 using HomeDB.Application.DTOs.Files;
 using HomeDB.Domain.Common;
 using HomeDB.Tests.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -249,7 +250,10 @@ namespace HomeDB.Tests.Integration
         {
             await Factory.CreateUserAsync(username, TestPassword, role);
 
-            HttpClient client = Factory.CreateClient();
+            HttpClient client = Factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                BaseAddress = new Uri("https://localhost")
+            });
             LoginDto loginDto = new LoginDto(username, TestPassword);
             HttpResponseMessage loginResponse = await client.PostAsJsonAsync("/api/auth/login", loginDto);
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
@@ -270,7 +274,10 @@ namespace HomeDB.Tests.Integration
             Assert.NotNull(registerBody);
             Assert.NotNull(registerBody!.Data);
 
-            HttpClient regularClient = Factory.CreateClient();
+            HttpClient regularClient = Factory.CreateClient(new WebApplicationFactoryClientOptions
+            {
+                BaseAddress = new Uri("https://localhost")
+            });
             LoginDto loginDto = new LoginDto(username, TestPassword);
             HttpResponseMessage loginResponse = await regularClient.PostAsJsonAsync("/api/auth/login", loginDto);
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);

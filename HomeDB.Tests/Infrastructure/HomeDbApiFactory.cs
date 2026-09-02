@@ -89,7 +89,9 @@ namespace HomeDB.Tests.Infrastructure
                 UserRoles = new List<UserRole>
                 {
                     new UserRole { RoleId = (int)role }
-                }
+                },
+                //Agregar configuración de usuario por defecto
+                AdminSettings = new UserAdminSettings()
             };
 
             //Se agrega el usuario a la base de datos y se guarda
