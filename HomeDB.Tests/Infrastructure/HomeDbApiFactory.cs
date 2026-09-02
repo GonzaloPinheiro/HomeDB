@@ -35,6 +35,8 @@ namespace HomeDB.Tests.Infrastructure
             builder.UseSetting("ConnectionStrings:PostgreSQL_HomeDB", _postgresContainer.GetConnectionString());
             builder.UseSetting("RateLimiting:Auth:Enabled", "false");
             builder.UseSetting("RateLimiting:Global:Enabled", "false");
+            builder.UseSetting("Jwt:Key", "TestOnlyJwtSigningKey_MustBeAtLeast32CharsLong");
+            builder.UseSetting("Jwt:Issuer", "HomeDB_Test_Issuer");
         }
 
         //Implementación de IAsyncLifetime para inicializar el contenedor y Respawner antes de las pruebas
