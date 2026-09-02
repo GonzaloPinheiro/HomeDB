@@ -28,6 +28,9 @@ namespace HomeDB.Tests.Infrastructure
         private NpgsqlConnection _dbConnection = null!;
         private Respawner _respawner = null!;
 
+        //Se crea un directorio temporal único para cada ejecución de pruebas usando un GUID para evitar colisiones.
+        private readonly string _storageRootPath = Path.Combine(Path.GetTempPath(), "HomeDB.Tests", Guid.NewGuid().ToString());
+
         //Configura el host web para usar la cadena de conexión del contenedor de PostgreSQL
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -37,6 +40,9 @@ namespace HomeDB.Tests.Infrastructure
             builder.UseSetting("RateLimiting:Global:Enabled", "false");
             builder.UseSetting("Jwt:Key", "TestOnlyJwtSigningKey_MustBeAtLeast32CharsLong");
             builder.UseSetting("Jwt:Issuer", "HomeDB_Test_Issuer");
+            builder.UseSetting("Storage:BasePath", Path.Combine(_storageRootPath, "files"));
+            builder.UseSetting("Storage:TempUploadsPath", Path.Combine(_storageRootPath, "temp-uploads"));
+            builder.UseSetting("LogFallback:BasePath", Path.Combine(_storageRootPath, "logs", "failed-logs"));
         }
 
         //Implementación de IAsyncLifetime para inicializar el contenedor y Respawner antes de las pruebas
@@ -71,6 +77,12 @@ namespace HomeDB.Tests.Infrastructure
             await _dbConnection.DisposeAsync();
             await _postgresContainer.DisposeAsync();
             await base.DisposeAsync();
+
+            //Eliminar el directorio temporal usado para el almacenamiento de ficheros de test
+            if (Directory.Exists(_storageRootPath))
+            {
+                Directory.Delete(_storageRootPath, recursive: true);
+            }
         }
 
         //Método de utilidad para crear un usuario en la base de datos para pruebas
