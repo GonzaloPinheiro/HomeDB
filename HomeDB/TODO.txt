@@ -1,6 +1,7 @@
-- Sacar valor dummy de contraseña para el login:
-	PasswordHelper ph = new PasswordHelper();
-	Console.WriteLine(ph.HashPassword("dummyContrasenha123"));
+
+
+- Crear la migración de el sistema de backups 
+
 
 - Cambiar los DTOs para seguir la convención(record -> dto de respuesta) y (class -> dto de entrada)
 - Ver que campos en las tablas vale la pena indexar de forma realista
