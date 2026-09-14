@@ -1,4 +1,5 @@
 ﻿using HomeDB.Application.DTOs;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces.Repositories;
 
@@ -57,9 +58,9 @@ namespace HomeDB.Application.Services
             //Calcular los conteos de errores y advertencias en los intervalos de tiempo especificados
             return new LogHealthResponseDto
             {
-                ErrorsLastHour = entries.Count(l => l.Level == "Error" && l.TimeStamp >= oneHourAgo),
-                ErrorsLast24h = entries.Count(l => l.Level == "Error"),
-                WarningsLast24h = entries.Count(l => l.Level == "Warning")
+                ErrorsLastHour = entries.Count(l => l.Level == LogLevel.Error.ToString() && l.TimeStamp >= oneHourAgo),
+                ErrorsLast24h = entries.Count(l => l.Level == LogLevel.Error.ToString()),
+                WarningsLast24h = entries.Count(l => l.Level == LogLevel.Warning.ToString())
             };
         }
 

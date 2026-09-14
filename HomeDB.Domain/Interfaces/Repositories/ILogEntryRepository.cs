@@ -18,7 +18,6 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Obietiene el número de errores y warnings registrados en la última hora y en las últimas 24 horas.
         /// </summary>
-        /// <param name="cToken"></param>
         Task<IEnumerable<(string Level, DateTimeOffset TimeStamp)>> GetHealthAsync(CancellationToken cToken);
 
         /// <summary>

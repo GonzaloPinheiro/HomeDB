@@ -1,7 +1,9 @@
+using HomeDB.Application.DTOs;
 using HomeDB.Application.Options;
 using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Common.RecordsInfrastructure;
 using HomeDB.Domain.Entities;
+using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
@@ -28,11 +30,11 @@ namespace HomeDB.Application.Services
         }
 
         //Lanza el proceso de backup diario
-        public async Task RunDailyBackupAsync(CancellationToken cToken)
+        public async Task<BackupAuditEntry> RunDailyBackupAsync(CancellationToken cToken)
         {
             //Rutas del directorio actual y anterior del backup diario
-            string currentPath = Path.Combine(_backupOptions.DailyDirectory, "backup_actual");
-            string previousPath = Path.Combine(_backupOptions.DailyDirectory, "backup_anterior");
+            string currentPath = Path.Combine(_backupOptions.Daily.Directory, "backup_actual");
+            string previousPath = Path.Combine(_backupOptions.Daily.Directory, "backup_anterior");
 
             //Marcar como eliminado el registro de auditoría activo más antiguo (si existe), ya que su backup físico va a ser reemplazado
             BackupAuditEntry? obsoleteEntry = await _backupAuditRepository.GetOldestActiveAsync(BackupLevel.Daily, cToken, false);
@@ -70,22 +72,61 @@ namespace HomeDB.Application.Services
             BackupProcessResult rsyncResult = await _backupProcessService.RunRsyncAsync(_backupOptions.SourceDirectory, currentPath, linkDestPath, cToken);
 
             //Volcar la base de datos solo si el rsync fue exitoso, reutilizando la misma cadena de conexión que el resto de la aplicación
-            BackupProcessResult pgDumpResult = rsyncResult.Success
+            BackupProcessResult pgDumpResult = rsyncResult.Success //Exito
                 ? await _backupProcessService.RunPgDumpAsync(
                     _configuration.GetConnectionString("PostgreSQL_HomeDB") 
                         ?? throw new InvalidOperationException("ConnectionStrings:PostgreSQL_HomeDB no configurado"),
                     Path.Combine(currentPath, "database.dump"), cToken)
-                : new BackupProcessResult(false, -1, 0, "Rsync falló, no se ejecutó pg_dump");
+                : new BackupProcessResult(false, -1, 0, "Rsync falló, no se ejecutó pg_dump"); //Fallo
 
             //Actualizar el registro de auditoría con el resultado final del backup
             newEntry.CompletedAt = DateTime.UtcNow;
-            newEntry.Status = rsyncResult.Success && pgDumpResult.Success ? BackupStatus.Success : BackupStatus.Failed;
+            newEntry.Status = rsyncResult.Success && pgDumpResult.Success 
+                ? BackupStatus.Success 
+                : BackupStatus.Failed;
             newEntry.FilesBackedUpSizeBytes = rsyncResult.OutputSizeBytes;
             newEntry.DatabaseDumpSizeBytes = pgDumpResult.OutputSizeBytes;
-            newEntry.ErrorMessage = rsyncResult.ErrorMessage ?? pgDumpResult.ErrorMessage;
+            newEntry.ErrorMessage = rsyncResult.ErrorMessage 
+                ?? pgDumpResult.ErrorMessage;
 
             //Persistir los cambios en la base de datos
             await _backupAuditRepository.SaveChangesAsync(cToken);
+
+            return newEntry;
+        }
+
+        //Lanza manualmente un backup para el nivel indicado, evitando solaparse con uno ya en curso para ese mismo nivel
+        public async Task<BackupAuditEntry> TriggerBackupAsync(BackupLevel level, CancellationToken cToken)
+        {
+            //Comprobar que no haya ya un backup en curso para el nivel indicado antes de lanzar uno nuevo
+            BackupAuditEntry? latestActiveEntry = await _backupAuditRepository.GetLatestActiveAsync(level, cToken);
+            if (latestActiveEntry?.Status == BackupStatus.Running)
+                throw new BackupAlreadyRunningException(level);
+
+            //Despachar al proceso correspondiente según el nivel de backup solicitado
+            return level switch
+            {
+                BackupLevel.Daily => await RunDailyBackupAsync(cToken),
+                _ => throw new BackupLevelNotSupportedException(level)
+            };
+        }
+
+        //Devuelve los registros de auditoría de backup según los filtros proporcionados en el DTO
+        public async Task<GetBackupHistoryResponseDto> GetHistoryAsync(GetBackupHistoryRequestDto dto, CancellationToken cToken)
+        {
+            //Obtiene el historial de backups paginado, opcionalmente filtrado por nivel
+            (IEnumerable<BackupAuditEntry> items, int totalCount) = await _backupAuditRepository.GetHistoryAsync(
+                dto.Level, dto.Page, dto.PageSize, cToken);
+
+            //Devuelve un DTO con los resultados y la información de paginación
+            return new GetBackupHistoryResponseDto
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / dto.PageSize)
+            };
         }
     }
 }

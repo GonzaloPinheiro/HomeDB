@@ -1,7 +1,9 @@
 
+-Añadir al .env la ruta del disco 2 para el backup de los archivos - ${BACKUP_HOST_PATH}:/storage/backups
 
 - Crear la migración de el sistema de backups 
 
+- Revisar launchSettings.json para ver si es necesario cambiar algo
 
 - Cambiar los DTOs para seguir la convención(record -> dto de respuesta) y (class -> dto de entrada)
 - Ver que campos en las tablas vale la pena indexar de forma realista

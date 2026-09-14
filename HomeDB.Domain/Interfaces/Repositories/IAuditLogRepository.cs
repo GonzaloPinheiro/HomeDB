@@ -1,5 +1,4 @@
 ﻿using HomeDB.Domain.Entities;
-using System.Security.AccessControl;
 
 namespace HomeDB.Domain.Interfaces.Repositories
 {
@@ -8,13 +7,10 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Inserta una nueva entrada de auditoría en la base de datos.
         /// </summary>
-        /// <param name="auditLogEntry"></param>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task InsertAsync(AuditLogEntry auditLogEntry, CancellationToken cToken);
 
         /// <summary>
-        /// 
+        /// Obtiene una lista de entradas de auditoría filtradas por los parámetros recibidos.
         /// </summary>
         Task<(IEnumerable<AuditLogEntry> Items, int TotalCount)> GetAuditLogsAsync(int pageNumber, int pageSize,
                                                 DateTimeOffset? from, DateTimeOffset? to,
@@ -25,8 +21,6 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// <summary>
         /// Persiste los cambios realizados en la base de datos.
         /// </summary>
-        /// <param name="cToken"></param>
-        /// <returns></returns>
         Task SaveChangesAsync(CancellationToken cToken);
     }
 }

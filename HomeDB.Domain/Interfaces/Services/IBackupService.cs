@@ -1,4 +1,5 @@
-﻿
+using HomeDB.Domain.Entities;
+
 namespace HomeDB.Domain.Interfaces.Services
 {
     public interface IBackupService
@@ -6,6 +7,6 @@ namespace HomeDB.Domain.Interfaces.Services
         /// <summary>
         /// Lanza el proceso de backup diario
         /// </summary>
-        Task RunDailyBackupAsync(CancellationToken cToken);
+        Task<BackupAuditEntry> RunDailyBackupAsync(CancellationToken cToken);
     }
 }

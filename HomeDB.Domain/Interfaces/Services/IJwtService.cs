@@ -4,9 +4,14 @@ namespace HomeDB.Domain.Interfaces.Services
 {
     public interface IJwtService
     {
-        //Generates a JWT access token for the given user
+        /// <summary>
+        /// Generates a JWT access token for the given user
+        /// </summary>
         string GenerateAccessToken(User user);
-        //Genera un refresh token
+
+        /// <summary>
+        /// Genera un refresh token
+        /// </summary>
         string GenerateRefreshToken();
     }
 }

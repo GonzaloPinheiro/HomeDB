@@ -2,6 +2,7 @@
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Infrastructure.Observability;
+using LogLevel = HomeDB.Domain.Common.Enums.LogLevel;
 
 namespace HomeDB.Middlewares
 {
@@ -66,7 +67,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         filenfe.Message,
                         ApiErrorCodes.FileNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Archivo no encontrado. Path: {path}, Method: {method}"
                     ),
 
@@ -74,7 +75,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status413RequestEntityTooLarge,
                         ftle.Message,
                         ApiErrorCodes.FileTooLarge,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Archivo demasiado grande. Path: {path}, Method: {method}"
                     ),
 
@@ -82,7 +83,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status413RequestEntityTooLarge,
                         slee.Message,
                         ApiErrorCodes.StorageLimitExceeded,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Cuota de almacenamiento del usuario excedida. Path: {path}, Method: {method}"
                     ),
 
@@ -90,7 +91,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         pfnt.Message,
                         ApiErrorCodes.FolderNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Carpeta padre no encontrada. Path: {path}, Method: {method}"
                     ),
 
@@ -98,7 +99,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         foldnte.Message,
                         ApiErrorCodes.FolderNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Carpeta no encontrada. Path: {path}, Method: {method}"
                     ),
 
@@ -106,7 +107,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status400BadRequest,
                         foldnee.Message,
                         ApiErrorCodes.FolderNotEmpty,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Carpeta no vacía. Path: {path}, Method: {method}"
                     ),
 
@@ -114,7 +115,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status400BadRequest,
                         foldcre.Message,
                         ApiErrorCodes.FolderCyclicReference,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Referencia cíclica en árbol de carpetas. Path: {path}, Method: {method}"
                     ),
 
@@ -122,7 +123,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         usernte.Message,
                         ApiErrorCodes.UserNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Usuario no encontrado. Path: {path}, Method: {method}"
                     ),
 
@@ -130,7 +131,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status409Conflict,
                         uhade.Message,
                         ApiErrorCodes.UserHasAssociatedData,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Usuario tiene datos asociados y no puede ser eliminado. Path: {path}, Method: {method}"
                     ),
 
@@ -138,7 +139,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         rolente.Message,
                         ApiErrorCodes.RoleNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Rol no encontrado. Path: {path}, Method: {method}"
                     ),
 
@@ -146,14 +147,14 @@ namespace HomeDB.Middlewares
                          StatusCodes.Status404NotFound,
                          mnfe.Message,
                          ApiErrorCodes.MetricNotFound,
-                         "Warning",
+                         LogLevel.Warning,
                          $"No ha sido posible encontrar la métrica indicada. Path: {path}, Method: {method}"
                      ),
                     UserSettingsNotFoundException usnfe=> (
                         StatusCodes.Status404NotFound, 
                         usnfe.Message,
                         ApiErrorCodes.UserSettingsNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"No se han encontrado las configuraciones del usuario. Path: {path}, Method: {method}"
                     ),
 
@@ -161,14 +162,14 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status409Conflict,
                         useraee.Message,
                         ApiErrorCodes.UserAlreadyExists,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Usuario ya existe. Path: {path}, Method: {method}"
                     ),
                     EmailAlreadyExistsException emailaee => (
                         StatusCodes.Status409Conflict,
                         emailaee.Message,
                         ApiErrorCodes.EmailAlreadyExists,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Usuario ya existe. Path: {path}, Method: {method}"
                     ),
 
@@ -176,14 +177,14 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status401Unauthorized,
                         ice.Message,
                         ApiErrorCodes.InvalidCredentials,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Credenciales inválidas. Path: {path}, Method: {method}"
                     ),
                     InvalidRefreshTokenException irte => (
                         StatusCodes.Status401Unauthorized,
                         irte.Message,
                         ApiErrorCodes.InvalidCredentials,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Refresh token inválido o expirado. Path: {path}, Method: {method}"
                     ),
 
@@ -191,7 +192,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         umpnfe.Message,
                         ApiErrorCodes.PermissionsNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Permisos de módulo no encontrados. Path: {path}, Method: {method}"
                     ),
 
@@ -199,7 +200,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status403Forbidden,
                         made.Message,
                         ApiErrorCodes.Unauthorized,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Acceso denegado al módulo. Path: {path}, Method: {method}"
                     ),
 
@@ -207,7 +208,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status403Forbidden,
                         ue.Message,
                         ApiErrorCodes.Unauthorized,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Acceso no autorizado. Path: {path}, Method: {method}"
                     ),
 
@@ -215,7 +216,7 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status403Forbidden,
                         uae.Message,
                         ApiErrorCodes.Unauthorized,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Acceso no autorizado. Path: {path}, Method: {method}"
                     ),
 
@@ -224,50 +225,67 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status404NotFound,
                         usnfe.Message,
                         ApiErrorCodes.UploadSessionNotFound,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Sesión de subida no encontrada. Path: {path}, Method: {method}"
                     ),
                     IncompleteUploadException iue => (
                         StatusCodes.Status400BadRequest,
                         iue.Message,
                         ApiErrorCodes.UploadIncomplete,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Subida incompleta, faltan fragmentos. Path: {path}, Method: {method}"
                     ),
                     UploadSessionNotActiveException usnae => (
                         StatusCodes.Status409Conflict,
                         usnae.Message,
                         ApiErrorCodes.UploadSessionNotActive,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Sesión de subida ya no está activa. Path: {path}, Method: {method}"
                     ),
                     InvalidChunkSizeException icse => (
                         StatusCodes.Status400BadRequest,
                         icse.Message,
                         ApiErrorCodes.InvalidChunkSize,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Tamaño de chunk inválido. Path: {path}, Method: {method}"
                     ),
                     InvalidChunkNumberException icne => (
                         StatusCodes.Status400BadRequest,
                         icne.Message,
                         ApiErrorCodes.InvalidChunkNumber,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Número de chunk fuera de rango. Path: {path}, Method: {method}"
                     ),
                     AssembledFileSizeMismatchException afsme => (
                         StatusCodes.Status500InternalServerError,
                         afsme.Message,
                         ApiErrorCodes.AssembledFileSizeMismatch,
-                        "Error",
+                        LogLevel.Error,
                         $"Tamaño del archivo ensamblado no coincide. Path: {path}, Method: {method}"
                     ),
                     InvalidUploadRequestException iure => (
                         StatusCodes.Status400BadRequest,
                         iure.Message,
                         ApiErrorCodes.InvalidUploadRequest,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Datos de inicio de subida inválidos. Path: {path}, Method: {method}"
+                    ),
+                    //
+
+                    //Manejo de excepciones relacionadas con el subsistema de backups
+                    BackupAlreadyRunningException bare => (
+                        StatusCodes.Status409Conflict,
+                        bare.Message,
+                        ApiErrorCodes.BackupAlreadyRunning,
+                        LogLevel.Warning,
+                        $"Ya hay un backup en curso para el nivel indicado. Path: {path}, Method: {method}"
+                    ),
+                    BackupLevelNotSupportedException blnse => (
+                        StatusCodes.Status400BadRequest,
+                        blnse.Message,
+                        ApiErrorCodes.BackupLevelNotSupported,
+                        LogLevel.Warning,
+                        $"Nivel de backup no soportado. Path: {path}, Method: {method}"
                     ),
                     //
 
@@ -275,21 +293,21 @@ namespace HomeDB.Middlewares
                         StatusCodes.Status400BadRequest,
                         "Parámetro requerido no proporcionado",
                         ApiErrorCodes.InternalError,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Argumento nulo. Parámetro: {ane.ParamName}, Path: {path}, Method: {method}"
                     ),
                     ArgumentException ae => (
                         StatusCodes.Status400BadRequest,
                         ae.Message,
                         ApiErrorCodes.InternalError,
-                        "Warning",
+                        LogLevel.Warning,
                         $"Argumento nulo. Parámetro: {ae.ParamName}, Path: {path}, Method: {method}"
                     ),
                     _ => (
                         StatusCodes.Status500InternalServerError,
                         "Error inesperado del servidor",
                         ApiErrorCodes.InternalError,
-                        "Critical",
+                        LogLevel.Critical,
                         $"Excepción no controlada. Type: {ex.GetType().Name}, Path: {path}, Method: {method}, Message: {ex.Message}"
                     )
                 };
@@ -308,11 +326,11 @@ namespace HomeDB.Middlewares
         /// <param name="message"></param>
         /// <param name="correlationId"></param>
         /// <returns></returns>
-        private async Task LogAsync(Exception ex, string level, string message, string correlationId)
+        private async Task LogAsync(Exception ex, LogLevel level, string message, string correlationId)
         {
             await _logger.AddAsync(new LogEntry
             {
-                Level = level,
+                Level = level.ToString(),
                 Source = "HomeDB.Middleware.ExceptionHandlerMiddleware",
                 Operation = "InvokeAsync",
                 Message = message,
