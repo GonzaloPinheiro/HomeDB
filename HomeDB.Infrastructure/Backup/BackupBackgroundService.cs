@@ -1,6 +1,7 @@
 using HomeDB.Application.Options;
 using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
+using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Observability;
@@ -72,7 +73,8 @@ namespace HomeDB.Infrastructure.Backup
 
                 if (isDue)
                 {
-                    await backupService.RunDailyBackupAsync(cToken);
+                    //Lanzar el backup diario
+                    await backupService.TriggerBackupAsync(BackupLevel.Daily, cToken);
 
                     //Log de exito
                     await _logger.AddAsync(new LogEntry
@@ -83,6 +85,17 @@ namespace HomeDB.Infrastructure.Backup
                         Message = "Backup diario completado"
                     });
                 }
+            }
+            catch (BackupAlreadyRunningException)
+            {
+                //No es un error: ya hay un backup en curso simplemente se omite
+                await _logger.AddAsync(new LogEntry
+                {
+                    Level = LogLevel.Information.ToString(),
+                    Source = "HomeDB.Infrastructure.Backup.BackupBackgroundService",
+                    Operation = nameof(RunDailyBackupIfDueSafelyAsync),
+                    Message = "Backup diario omitido: ya hay uno en curso"
+                });
             }
             catch (Exception ex)
             {

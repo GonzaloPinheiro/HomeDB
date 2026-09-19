@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Options;
 
 namespace HomeDB.Application.Options
 {
@@ -12,6 +13,7 @@ namespace HomeDB.Application.Options
         [Range(1, 1440)]
         public int CheckIntervalMinutes { get; set; } = 60;
 
+        [ValidateObjectMembers]
         public BackupLevelOptions Daily { get; set; } = new BackupLevelOptions();
     }
 

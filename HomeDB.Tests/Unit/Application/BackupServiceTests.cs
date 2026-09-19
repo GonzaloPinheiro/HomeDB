@@ -159,18 +159,19 @@ namespace HomeDB.Tests.Unit.Application
         }
 
         [Fact]
-        public async Task RunDailyBackupAsync_WhenConnectionStringMissing_ThrowsAndLeavesEntryRunning()
+        public async Task RunDailyBackupAsync_WhenConnectionStringMissing_ThrowsAndMarksEntryFailed()
         {
             BackupService service = CreateService(connectionString: null);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(
+            InvalidOperationException thrown = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => service.RunDailyBackupAsync(CancellationToken.None));
 
-            //El registro de auditoría ya se había guardado como "en curso" antes de intentar el pg_dump,
-            //y al lanzar la excepción nunca llega a actualizarse con el resultado final
+            //El registro de auditoría ya se había guardado como "en curso" antes de intentar el pg_dump;
+            //al lanzar la excepción debe quedar marcado como fallido en vez de "en curso" para siempre
             BackupAuditEntry entry = Assert.Single(_repository.Entries);
-            Assert.Equal(BackupStatus.Running, entry.Status);
-            Assert.Null(entry.CompletedAt);
+            Assert.Equal(BackupStatus.Failed, entry.Status);
+            Assert.NotNull(entry.CompletedAt);
+            Assert.Equal(thrown.Message, entry.ErrorMessage);
         }
 
         //Crea un BackupService con los fakes del test y la configuración indicada

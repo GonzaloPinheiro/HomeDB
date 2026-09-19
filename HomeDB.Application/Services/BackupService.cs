@@ -63,31 +63,46 @@ namespace HomeDB.Application.Services
             await _backupAuditRepository.AddAsync(newEntry, cToken);
             await _backupAuditRepository.SaveChangesAsync(cToken);
 
-            //Copiar los archivos con rsync, reutilizando el backup anterior como link-dest si existe para ahorrar espacio
-            string? linkDestPath = Directory.Exists(previousPath) 
-                ? previousPath 
-                : null;
+            try
+            {
+                //Copiar los archivos con rsync, reutilizando el backup anterior como link-dest si existe para ahorrar espacio
+                string? linkDestPath = Directory.Exists(previousPath)
+                    ? previousPath
+                    : null;
 
-            //Ejecutar el proceso de rsync y capturar el resultado
-            BackupProcessResult rsyncResult = await _backupProcessService.RunRsyncAsync(_backupOptions.SourceDirectory, currentPath, linkDestPath, cToken);
+                //Ejecutar el proceso de rsync y capturar el resultado
+                BackupProcessResult rsyncResult = await _backupProcessService.RunRsyncAsync(_backupOptions.SourceDirectory, currentPath, linkDestPath, cToken);
 
-            //Volcar la base de datos solo si el rsync fue exitoso, reutilizando la misma cadena de conexión que el resto de la aplicación
-            BackupProcessResult pgDumpResult = rsyncResult.Success //Exito
-                ? await _backupProcessService.RunPgDumpAsync(
-                    _configuration.GetConnectionString("PostgreSQL_HomeDB") 
-                        ?? throw new InvalidOperationException("ConnectionStrings:PostgreSQL_HomeDB no configurado"),
-                    Path.Combine(currentPath, "database.dump"), cToken)
-                : new BackupProcessResult(false, -1, 0, "Rsync falló, no se ejecutó pg_dump"); //Fallo
+                //Volcar la base de datos solo si el rsync fue exitoso, reutilizando la misma cadena de conexión que el resto de la aplicación
+                BackupProcessResult pgDumpResult = rsyncResult.Success //Exito
+                    ? await _backupProcessService.RunPgDumpAsync(
+                        _configuration.GetConnectionString("PostgreSQL_HomeDB")
+                            ?? throw new InvalidOperationException("ConnectionStrings:PostgreSQL_HomeDB no configurado"),
+                        Path.Combine(currentPath, "database.dump"), cToken)
+                    : new BackupProcessResult(false, -1, 0, "Rsync falló, no se ejecutó pg_dump"); //Fallo
 
-            //Actualizar el registro de auditoría con el resultado final del backup
-            newEntry.CompletedAt = DateTime.UtcNow;
-            newEntry.Status = rsyncResult.Success && pgDumpResult.Success 
-                ? BackupStatus.Success 
-                : BackupStatus.Failed;
-            newEntry.FilesBackedUpSizeBytes = rsyncResult.OutputSizeBytes;
-            newEntry.DatabaseDumpSizeBytes = pgDumpResult.OutputSizeBytes;
-            newEntry.ErrorMessage = rsyncResult.ErrorMessage 
-                ?? pgDumpResult.ErrorMessage;
+                //Actualizar el registro de auditoría con el resultado final del backup
+                newEntry.CompletedAt = DateTime.UtcNow;
+                newEntry.Status = rsyncResult.Success && pgDumpResult.Success
+                    ? BackupStatus.Success
+                    : BackupStatus.Failed;
+                newEntry.FilesBackedUpSizeBytes = rsyncResult.OutputSizeBytes;
+                newEntry.DatabaseDumpSizeBytes = pgDumpResult.OutputSizeBytes;
+                newEntry.ErrorMessage = rsyncResult.ErrorMessage
+                    ?? pgDumpResult.ErrorMessage;
+            }
+            catch (Exception ex)
+            {
+                //Si algo revienta antes de tener un resultado final (falta de configuración, fallo de IO, cancelación...),
+                //el entry no puede quedar en Running para siempre: se marca como fallido y se relanza la excepción original
+                newEntry.CompletedAt = DateTime.UtcNow;
+                newEntry.Status = BackupStatus.Failed;
+                newEntry.ErrorMessage = ex.Message;
+
+                //Se guarda con un token nuevo porque cToken puede venir ya cancelado
+                await _backupAuditRepository.SaveChangesAsync(CancellationToken.None);
+                throw;
+            }
 
             //Persistir los cambios en la base de datos
             await _backupAuditRepository.SaveChangesAsync(cToken);
