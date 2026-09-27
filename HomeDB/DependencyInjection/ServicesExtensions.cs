@@ -1,6 +1,5 @@
 ﻿using HomeDB.Application.Options;
 using HomeDB.Application.Services;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Backup;
@@ -43,6 +42,7 @@ namespace HomeDB.DependencyInjection
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddSingleton<IFileTypeValidator, MimeDetectiveFileTypeValidator>();
+            services.AddSingleton<IContentTypeResolver, ContentTypeResolver>();
 
             // Locks en memoria compartidos entre requests: deben vivir como singleton
             services.AddSingleton<IUploadChunkLockProvider, UploadChunkLockProvider>();

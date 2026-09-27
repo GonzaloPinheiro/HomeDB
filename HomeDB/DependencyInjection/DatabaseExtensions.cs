@@ -1,4 +1,5 @@
-﻿using HomeDB.Infrastructure.Data;
+﻿using HomeDB.Application.Options;
+using HomeDB.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeDB.DependencyInjection

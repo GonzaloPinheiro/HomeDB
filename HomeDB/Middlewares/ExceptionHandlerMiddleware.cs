@@ -30,8 +30,6 @@ namespace HomeDB.Middlewares
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
         public async Task InvokeAsync(HttpContext context)
         {
             // Variables y objetos

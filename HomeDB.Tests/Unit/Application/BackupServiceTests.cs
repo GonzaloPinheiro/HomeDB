@@ -5,7 +5,6 @@ using HomeDB.Domain.Common.RecordsInfrastructure;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Tests.Unit.Application
@@ -158,32 +157,13 @@ namespace HomeDB.Tests.Unit.Application
                 _processService.LastPgDumpOutputFilePath);
         }
 
-        [Fact]
-        public async Task RunDailyBackupAsync_WhenConnectionStringMissing_ThrowsAndMarksEntryFailed()
+        //Crea un BackupService con los fakes del test y la configuración indicada.
+        private BackupService CreateService(string connectionString = "Host=localhost;Database=homedb;Username=u;Password=p")
         {
-            BackupService service = CreateService(connectionString: null);
-
-            InvalidOperationException thrown = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => service.RunDailyBackupAsync(CancellationToken.None));
-
-            //El registro de auditoría ya se había guardado como "en curso" antes de intentar el pg_dump;
-            //al lanzar la excepción debe quedar marcado como fallido en vez de "en curso" para siempre
-            BackupAuditEntry entry = Assert.Single(_repository.Entries);
-            Assert.Equal(BackupStatus.Failed, entry.Status);
-            Assert.NotNull(entry.CompletedAt);
-            Assert.Equal(thrown.Message, entry.ErrorMessage);
-        }
-
-        //Crea un BackupService con los fakes del test y la configuración indicada
-        private BackupService CreateService(string? connectionString = "Host=localhost;Database=homedb;Username=u;Password=p")
-        {
-            Dictionary<string, string?> configValues = new Dictionary<string, string?>();
-            if (connectionString is not null)
-                configValues["ConnectionStrings:PostgreSQL_HomeDB"] = connectionString;
-
-            IConfiguration configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(configValues)
-                .Build();
+            IOptions<DatabaseOptions> databaseOptions = Options.Create(new DatabaseOptions
+            {
+                PostgreSQL_HomeDB = connectionString
+            });
 
             IOptions<BackupOptions> options = Options.Create(new BackupOptions
             {
@@ -191,7 +171,7 @@ namespace HomeDB.Tests.Unit.Application
                 Daily = new BackupLevelOptions { Directory = _dailyDirectory }
             });
 
-            return new BackupService(_repository, _processService, configuration, options);
+            return new BackupService(_repository, _processService, databaseOptions, options);
         }
 
         #region Fakes

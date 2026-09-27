@@ -6,7 +6,6 @@ using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Application.Services
@@ -16,16 +15,16 @@ namespace HomeDB.Application.Services
         //Variables y objetos globales
         private readonly IBackupAuditRepository _backupAuditRepository;
         private readonly IBackupProcessService _backupProcessService;
-        private readonly IConfiguration _configuration;
+        private readonly DatabaseOptions _databaseOptions;
         private readonly BackupOptions _backupOptions;
 
         //Constructores
         public BackupService(IBackupAuditRepository backupAuditRepository, IBackupProcessService backupProcessService,
-                             IConfiguration configuration, IOptions<BackupOptions> backupOptions)
+                             IOptions<DatabaseOptions> databaseOptions, IOptions<BackupOptions> backupOptions)
         {
             _backupAuditRepository = backupAuditRepository;
             _backupProcessService = backupProcessService;
-            _configuration = configuration;
+            _databaseOptions = databaseOptions.Value;
             _backupOptions = backupOptions.Value;
         }
 
@@ -76,8 +75,7 @@ namespace HomeDB.Application.Services
                 //Volcar la base de datos solo si el rsync fue exitoso, reutilizando la misma cadena de conexión que el resto de la aplicación
                 BackupProcessResult pgDumpResult = rsyncResult.Success //Exito
                     ? await _backupProcessService.RunPgDumpAsync(
-                        _configuration.GetConnectionString("PostgreSQL_HomeDB")
-                            ?? throw new InvalidOperationException("ConnectionStrings:PostgreSQL_HomeDB no configurado"),
+                        _databaseOptions.PostgreSQL_HomeDB,
                         Path.Combine(currentPath, "database.dump"), cToken)
                     : new BackupProcessResult(false, -1, 0, "Rsync falló, no se ejecutó pg_dump"); //Fallo
 

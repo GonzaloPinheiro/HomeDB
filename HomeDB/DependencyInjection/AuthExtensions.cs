@@ -1,8 +1,8 @@
-﻿using HomeDB.Application.Authorization.Handlers;
-using HomeDB.Application.Authorization.Requirements;
+﻿using HomeDB.Authorization.Handlers;
+using HomeDB.Authorization.Requirements;
+using HomeDB.Application.Options;
 using HomeDB.Common;
 using HomeDB.Domain.Common.Enums;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

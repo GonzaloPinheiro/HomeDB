@@ -1,9 +1,9 @@
 ﻿using HomeDB.Application.DTOs.Auth;
+using HomeDB.Application.Options;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Infrastructure.Observability;
-using HomeDB.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace HomeDB.Controllers
 {
-    
+
     [Route("api/auth")]
     public class AuthController : ApiControllerBase
     {
@@ -23,7 +23,7 @@ namespace HomeDB.Controllers
         {
             _logger = logger;
             _authService = authService;
-            _cookieSameSite = authOptions.Value.CookieSameSite!.Value;
+            _cookieSameSite = authOptions.Value.CookieSameSite!.Value.ToSameSiteMode();
         }
 
         /// <summary>

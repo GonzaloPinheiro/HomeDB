@@ -1,9 +1,8 @@
 ﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
-using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
