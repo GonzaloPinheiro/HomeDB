@@ -4,31 +4,58 @@ namespace HomeDB.Domain.Interfaces.Repositories
 {
     public interface IUserRepository
     {
-        //Comrpueba si existe un usuario con el nombre indicado
+        /// <summary>
+        /// Comrpueba si existe un usuario con el nombre indicado
+        /// </summary>
         Task<bool> UserExistsAsync(string username, CancellationToken cToken);
-        //Comrpueba si existe un usuario con el ID indicado
+
+        /// <summary>
+        /// Comrpueba si existe un usuario con el ID indicado
+        /// </summary>
         Task<bool> UserExistsAsync(int userId, CancellationToken cToken);
-        //Comrpueba si ya existe una cuenta con el email indicado
+
+        /// <summary>
+        /// Comrpueba si ya existe una cuenta con el email indicado
+        /// </summary>
         Task<bool> EmailExistsAsync(string email, CancellationToken cToken);
-        //Devuelve un usuario buscando por el userId
+
+        /// <summary>
+        /// Devuelve un usuario buscando por el userId
+        /// </summary>
         Task<User?> GetUserByIdAsync(int userId, CancellationToken cToken, bool asNoTracking = true);
-        //Devuelve un usuario con sus roles buscando por el userId
+
+        /// <summary>
+        /// Devuelve un usuario con sus roles buscando por el userId
+        /// </summary>
         Task<User?> GetUserByIdWithRolesAsync(int userId, CancellationToken cToken, bool asNoTracking = true);
-        //Devuelve el usuario junto con sus roles asignados
+
+        /// <summary>
+        /// Devuelve el usuario junto con sus roles asignados
+        /// </summary>
         Task<User?> GetByUsernameWithRolesAsync(string username, CancellationToken cToken, bool asNoTracking = true);
+
+        /// <summary>
+        /// Devuelve el usuario junto con sus roles asignados
+        /// </summary>
         Task<(IEnumerable<User> Users, int TotalCount)> GetUsersAsync(int page, int pageSize,
                                               int? userId, string? userName, string? email,
                                               DateTimeOffset? from, DateTimeOffset? to,
                                               int? roleId, string? roleName,
                                               CancellationToken cToken);
 
-        //Agrega un nuevo usuario
+        /// <summary>
+        /// Agrega un nuevo usuario
+        /// </summary>
         Task AddUserAsync(User user, CancellationToken cToken);
 
-        //Elimina un usuario
+        /// <summary>
+        /// Elimina un usuario
+        /// </summary>
         void DeleteUser(User user);
 
-        //Confirma todos los cambios en la base de datos
+        /// <summary>
+        /// Confirma todos los cambios en la base de datos
+        /// </summary>
         Task SaveChangesAsync(CancellationToken cToken);
     }
 }

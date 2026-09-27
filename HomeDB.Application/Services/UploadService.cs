@@ -5,10 +5,8 @@ using HomeDB.Domain.Common;
 using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Application.Services
@@ -26,6 +24,7 @@ namespace HomeDB.Application.Services
         private readonly IUploadChunkLockProvider _lockProvider;
         private readonly IFileStorageService _fileStorageService;
         private readonly IFileTypeValidator _fileTypeValidator;
+        private readonly IContentTypeResolver _contentTypeResolver;
         private readonly AuditService _auditService;
         private readonly UserAdminSettingsService _userAdminSettingsService;
         private readonly StorageOptions _storageOptions;
@@ -33,8 +32,8 @@ namespace HomeDB.Application.Services
         //Constructores
         public UploadService(IUploadSessionRepository uploadSessionRepository, IFolderRepository folderRepository,
                              IFileItemRepository fileItemRepository, IUploadChunkLockProvider lockProvider, IUploadChunkRepository uploadChunkRepository,
-                             IFileStorageService fileStorageService, IFileTypeValidator fileTypeValidator, AuditService auditService,
-                             UserAdminSettingsService userAdminSettingsService, IOptions<StorageOptions> storageOptions)
+                             IFileStorageService fileStorageService, IFileTypeValidator fileTypeValidator, IContentTypeResolver contentTypeResolver,
+                             AuditService auditService, UserAdminSettingsService userAdminSettingsService, IOptions<StorageOptions> storageOptions)
         {
             _uploadSessionRepository = uploadSessionRepository;
             _folderRepository = folderRepository;
@@ -43,6 +42,7 @@ namespace HomeDB.Application.Services
             _uploadChunkRepository = uploadChunkRepository;
             _fileStorageService = fileStorageService;
             _fileTypeValidator = fileTypeValidator;
+            _contentTypeResolver = contentTypeResolver;
             _auditService = auditService;
             _userAdminSettingsService = userAdminSettingsService;
             _storageOptions = storageOptions.Value;
@@ -374,8 +374,7 @@ namespace HomeDB.Application.Services
                         await _fileStorageService.SaveAsync(assembledReadStream, storedName, cToken);
                     }
 
-                    FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
-                    if (!contentTypeProvider.TryGetContentType(session.FileName, out string? contentType))
+                    if (!_contentTypeResolver.TryGetContentType(session.FileName, out string? contentType))
                         contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
 
                     //Crear un nuevo FileItem para la base de datos con la información del archivo subido

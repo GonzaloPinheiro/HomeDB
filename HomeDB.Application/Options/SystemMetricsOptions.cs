@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace HomeDB.Infrastructure.SystemMonitoring
+namespace HomeDB.Application.Options
 {
     //Se usa para verificar que la configuración de las variables de entorno esté bien hecha
     public class SystemMetricsOptions

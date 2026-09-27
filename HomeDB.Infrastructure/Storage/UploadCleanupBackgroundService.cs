@@ -1,5 +1,6 @@
 ﻿using HomeDB.Application.Options;
 using HomeDB.Application.Services;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,7 +64,7 @@ namespace HomeDB.Infrastructure.Storage
             {
                 await _logger.AddAsync(new LogEntry
                 {
-                    Level = "Error",
+                    Level = LogLevel.Error.ToString(),
                     Source = "HomeDB.Infrastructure.Storage.UploadCleanupBackgroundService",
                     Operation = nameof(RunCleanupSafelyAsync),
                     Message = "Error en cleanup",

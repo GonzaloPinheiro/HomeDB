@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace HomeDB.Infrastructure.Security
+namespace HomeDB.Application.Options
 {
     //Para la comprobación de la autenticación JWT en el arranque, se necesitan el issuer y la key completos.
     public class JwtOptions

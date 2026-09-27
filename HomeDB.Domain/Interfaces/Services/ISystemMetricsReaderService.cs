@@ -7,7 +7,6 @@ namespace HomeDB.Domain.Interfaces.Services
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="cToken"></param>
         Task<CpuSnapshot?> ReadCpuAsync(CancellationToken cToken);
 
         /// <summary>
@@ -25,6 +24,9 @@ namespace HomeDB.Domain.Interfaces.Services
         /// </summary>
         Task<TemperatureSnapshot?> ReadTemperatureAsync(CancellationToken cToken);
 
+        /// <summary>
+        /// 
+        /// </summary>
         Task<FanStatusSnapshot?> ReadFanStatusAsync(CancellationToken cToken);
     }
 }

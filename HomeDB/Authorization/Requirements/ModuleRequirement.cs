@@ -1,7 +1,7 @@
-﻿using HomeDB.Domain.Common.Enums;
+using HomeDB.Domain.Common.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace HomeDB.Application.Authorization.Requirements
+namespace HomeDB.Authorization.Requirements
 {
     //Requirement para verificar si el usuario tiene acceso a un módulo específico
     public class ModuleRequirement : IAuthorizationRequirement

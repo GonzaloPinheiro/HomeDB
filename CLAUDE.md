@@ -8,11 +8,11 @@ Sin MediatR, FluentValidation, AutoMapper ni Serilog.
 - **`HomeDB.Domain`** (`HomeDB.Domain.*`) — `Entities/`, `Interfaces/`, `Exceptions/`, `Common/`
   - Entidades: `User`, `FileItem`, `FolderItem`, `RefreshToken`, `AuditLogEntry`, `Role`, `UserRole`, `LogEntry`
   - Interfaces repositorio: `IUserRepository`, `IFileItemRepository`, `IFolderRepository`, `IRefreshTokenRepository`, `IAuditLogRepository`, `ILogEntryRepository`
-- **`HomeDB.Application`** (`HomeDB.Application.*`) — `Services/`, `DTOs/`
+- **`HomeDB.Application`** (`HomeDB.Application.*`) — `Services/`, `DTOs/`, `Options/`
   - Servicios: `AuthService`, `FilesService`, `FoldersService`, `AuditService`, `StatisticsService`, `LogsService`
 - **`HomeDB.Infrastructure`** (`HomeDB.Infrastructure.*`) — `Data/`, `Repositories/`, `Migrations/`, `Security/`, `Storage/`, `Observability/`
   - Repos: `UserRepository`, `FileItemRepository`, `FolderRepository`, `AuditLogEntryRepository`, `RefreshTokenRepository`, `LogEntryRepository`¹
-- **`HomeDB`** (`HomeDB.*`) — `Controllers/`, `Middlewares/`, `DependencyInjection/`, `Common/`, `Program.cs`
+- **`HomeDB`** (`HomeDB.*`) — `Controllers/`, `Middlewares/`, `Authorization/`, `DependencyInjection/`, `Common/`, `Program.cs`
   - Controllers: `AuthController`, `FilesController`, `FoldersController`, `AdminController`, `StatisticsController`, `HealthController`
 
 ¹ `LogEntryRepository` usa `IDbContextFactory<AppDbContext>` (no `AppDbContext` directo) porque vive en un background service.
@@ -33,6 +33,15 @@ ApiObjResponse<T>.Failure(ApiErrorCodes.UserNotFound, "mensaje")
 [Authorize(Roles = nameof(RolesList.Admin))]  // AdminController (clase), AuthController.RegisterAsync
 [Authorize]  // FilesController, FoldersController, StatisticsController
 ```
+
+## Capas y dependencias externas
+
+`HomeDB.Application` no debe referenciar paquetes `Microsoft.AspNetCore.*` ni `Microsoft.Extensions.Configuration` — son detalles de la capa web/host, no del dominio de negocio. Única excepción tolerada: `Microsoft.Extensions.Options` / `.Options.DataAnnotations` (agnósticos de host: funcionan igual en web, consola o worker).
+
+Consecuencias de esta regla:
+- Autorización basada en módulos (`RequireModuleAttribute`, `ModuleAuthorizationHandler`, `ModuleRequirement`) vive en `HomeDB/Authorization/` (capa web), no en Application. La regla de negocio ("¿tiene el usuario este módulo habilitado?") vive en `UserModulePermissionsService.HasAccessAsync()`.
+- Cualquier traducción a un tipo de framework (p. ej. `SameSitePolicy` de dominio → `SameSiteMode` de ASP.NET Core) se hace en un extension method de `HomeDB/Common/`, nunca dentro de Application.
+- Si un caso de uso necesita algo que solo ofrece un paquete de framework (tipo de contenido por extensión, cadena de conexión, etc.), Application define la interfaz en `HomeDB.Domain.Interfaces.Services` y `HomeDB.Infrastructure` la implementa (p. ej. `IContentTypeResolver`).
 
 ## IDs
 

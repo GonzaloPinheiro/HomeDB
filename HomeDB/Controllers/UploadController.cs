@@ -1,11 +1,11 @@
-﻿using HomeDB.Application.Authorization.Attributes;
+﻿using HomeDB.Authorization.Attributes;
 using HomeDB.Application.DTOs;
 using HomeDB.Application.DTOs.Files;
 using HomeDB.Application.Services;
 using HomeDB.Common;
 using HomeDB.Domain.Common;
 using HomeDB.Domain.Common.Enums;
-using HomeDB.Domain.Interfaces;
+using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

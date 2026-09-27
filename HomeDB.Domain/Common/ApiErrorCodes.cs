@@ -32,6 +32,10 @@ namespace HomeDB.Domain.Common
         AssembledFileSizeMismatch = 1023,
         InvalidUploadRequest = 1024,
 
+        //Códigos de error relacionados con el subsistema de backups
+        BackupAlreadyRunning = 1025,
+        BackupLevelNotSupported = 1026,
+
         //Codigos de errores críticos
         InternalError = 9999
     }

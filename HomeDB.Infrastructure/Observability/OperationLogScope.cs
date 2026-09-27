@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Entities;
+﻿using HomeDB.Domain.Common.Enums;
+using HomeDB.Domain.Entities;
 
 namespace HomeDB.Infrastructure.Observability
 {
@@ -9,6 +10,9 @@ namespace HomeDB.Infrastructure.Observability
         //Variables y objetos
         private static readonly System.Threading.AsyncLocal<string> _currentCorrelationId = new System.Threading.AsyncLocal<string>();
         private static readonly System.Threading.AsyncLocal<DateTimeOffset> _currentStartTime = new System.Threading.AsyncLocal<DateTimeOffset>();
+        private static readonly System.Threading.AsyncLocal<string> _currentSource = new System.Threading.AsyncLocal<string>();
+        private static readonly System.Threading.AsyncLocal<string> _currentOperation = new System.Threading.AsyncLocal<string>();
+        private static readonly System.Threading.AsyncLocal<string> _currentUserId = new System.Threading.AsyncLocal<string>();
         private readonly Logger _logger;
         private readonly string _source = string.Empty;
         private readonly string _operation = string.Empty;
@@ -18,6 +22,9 @@ namespace HomeDB.Infrastructure.Observability
 
         public static string CurrentCorrelationId => _currentCorrelationId.Value!;
         public static DateTimeOffset CurrentStartTime => _currentStartTime.Value;
+        public static string CurrentSource => _currentSource.Value ?? string.Empty;
+        public static string CurrentOperation => _currentOperation.Value ?? string.Empty;
+        public static string CurrentUserId => _currentUserId.Value ?? string.Empty;
 
         #region Constructores
         public OperationLogScope(Logger logger, string source, string operation, string? correlationId, string? userId)
@@ -29,14 +36,19 @@ namespace HomeDB.Infrastructure.Observability
             _userId = userId ?? string.Empty;
             _start = DateTimeOffset.UtcNow;
 
-            // Guardar correlationId y start time en AsyncLocal
+            // Guardar correlationId, start time y datos de la operación en AsyncLocal.
+            // Esto permite que Logger.LogXxxAsync() los recupere automáticamente en cualquier punto
+            // de la misma cadena async (controller -> Application -> Infrastructure) sin repetirlos.
             _currentCorrelationId.Value = _correlationId;
             _currentStartTime.Value = _start;
+            _currentSource.Value = _source;
+            _currentOperation.Value = _operation;
+            _currentUserId.Value = _userId;
 
             //Fire-and-forget; aquí hago fire-and-forget para no bloquear registrando el logg.
             Task _ = _logger.AddAsync(new LogEntry
             {
-                Level = "Information",
+                Level = LogLevel.Information.ToString(),
                 Source = _source,
                 Operation = _operation,
                 Message = "Entering operation",
@@ -60,7 +72,7 @@ namespace HomeDB.Infrastructure.Observability
             //Creo el log de salida
             LogEntry exitEntry = new LogEntry
             {
-                Level = "Information",
+                Level = LogLevel.Information.ToString(),
                 Source = _source,
                 Operation = _operation,
                 Message = "Exiting operation",

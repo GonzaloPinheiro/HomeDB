@@ -1,8 +1,8 @@
 ﻿using HomeDB.Application.Options;
 using HomeDB.Application.Services;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
+using HomeDB.Infrastructure.Backup;
 using HomeDB.Infrastructure.Repositories;
 using HomeDB.Infrastructure.Services;
 using HomeDB.Infrastructure.Storage;
@@ -33,6 +33,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<IUserAdminSettingsRepository, UserAdminSettingsRepository>();
             services.AddScoped<IUploadSessionRepository, UploadSessionRepository>();
             services.AddScoped<IUploadChunkRepository, UploadChunkRepository>();
+            services.AddScoped<IBackupAuditRepository, BackupAuditRepository>();
 
             // Storage (+validation)
             services.AddOptions<StorageOptions>()
@@ -41,6 +42,7 @@ namespace HomeDB.DependencyInjection
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddSingleton<IFileTypeValidator, MimeDetectiveFileTypeValidator>();
+            services.AddSingleton<IContentTypeResolver, ContentTypeResolver>();
 
             // Locks en memoria compartidos entre requests: deben vivir como singleton
             services.AddSingleton<IUploadChunkLockProvider, UploadChunkLockProvider>();
@@ -57,6 +59,9 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<UserSettingsService>();
             services.AddScoped<UserAdminSettingsService>();
             services.AddScoped<UploadService>();
+            services.AddScoped<IBackupProcessService, BackupProcessService>();
+            services.AddScoped<BackupService>();
+            services.AddScoped<IBackupService>(sp => sp.GetRequiredService<BackupService>());
 
             // Límite de tamaño de fichero
             services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = configuration.GetValue<long>("Storage:MaxFileSizeBytes"));
@@ -67,6 +72,13 @@ namespace HomeDB.DependencyInjection
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
             services.AddHostedService<UploadCleanupBackgroundService>(); //Background service
+
+            // Backup periódico de archivos (rsync) y base de datos (pg_dump)
+            services.AddOptions<BackupOptions>()
+                    .Bind(configuration.GetSection("Backup"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+            services.AddHostedService<BackupBackgroundService>(); //Background service
 
             // Fallback a fichero para logs que no se pudieron persistir en la base de datos
             services.AddOptions<LogFallbackOptions>()

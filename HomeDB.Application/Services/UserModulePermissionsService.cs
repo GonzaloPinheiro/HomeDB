@@ -1,8 +1,9 @@
 ﻿using HomeDB.Application.DTOs;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 
 namespace HomeDB.Application.Services
 {
@@ -107,6 +108,32 @@ namespace HomeDB.Application.Services
         {
             if (!selector(permissions))
                 throw new ModuleAccessDeniedException(moduleName);
+        }
+
+        /// <summary>
+        /// Verifica si un usuario tiene acceso a un módulo específico. Devuelve false si el usuario no tiene permisos registrados.
+        /// </summary>
+        public async Task<bool> HasAccessAsync(int userId, AppModules module, CancellationToken cToken)
+        {
+            //Obtener los permisos de módulos del usuario, si existen
+            UserModulePermissions? permissions = await _permissionsRepository.GetByUserIdAsync(userId, cToken);
+            if (permissions is null)
+                return false;
+
+            //Verificar si el módulo está habilitado para el usuario
+            return module switch
+            {
+                AppModules.Files => permissions.FilesEnabled,
+                AppModules.Expenses => permissions.ExpensesEnabled,
+                AppModules.Investments => permissions.InvestmentsEnabled,
+                AppModules.SystemMonitor => permissions.SystemMonitorEnabled,
+                AppModules.UserManagement => permissions.UserManagementEnabled,
+                AppModules.RoleManagement => permissions.RoleManagementEnabled,
+                AppModules.SystemLogs => permissions.SystemLogsEnabled,
+                AppModules.AuditLogs => permissions.AuditLogsEnabled,
+                AppModules.RemoteScripts => permissions.RemoteScriptsEnabled,
+                _ => false
+            };
         }
 
         /// <summary>

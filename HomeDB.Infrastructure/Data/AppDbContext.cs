@@ -22,6 +22,7 @@ namespace HomeDB.Infrastructure.Data
         public DbSet<SystemMetricsEntry> SystemMetricsEntries => Set<SystemMetricsEntry>(); //Tabla para las métricas del sistema
         public DbSet<UploadSession> UploadSessions => Set<UploadSession>(); //Tabla para las sesiones de carga de archivos
         public DbSet<UploadChunk> UploadChunks => Set<UploadChunk>(); //Tabla para los fragmentos de las sesiones de carga de archivos
+        public DbSet<BackupAuditEntry> BackupAuditEntries => Set<BackupAuditEntry>(); //Tabla para los registros de auditoría del backup
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

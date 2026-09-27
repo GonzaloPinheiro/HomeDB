@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace HomeDB.Infrastructure.Data
+namespace HomeDB.Application.Options
 {
     //Para la comprobación de la conexión a la base de datos en el arranque, se necesita una cadena de conexión completa.
     public class DatabaseOptions

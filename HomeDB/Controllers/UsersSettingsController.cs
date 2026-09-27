@@ -1,4 +1,4 @@
-﻿using HomeDB.Application.Authorization.Attributes;
+﻿using HomeDB.Authorization.Attributes;
 using HomeDB.Application.DTOs;
 using HomeDB.Application.Services;
 using HomeDB.Domain.Common;

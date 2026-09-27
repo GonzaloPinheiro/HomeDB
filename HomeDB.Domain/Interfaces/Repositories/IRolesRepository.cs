@@ -15,7 +15,9 @@ namespace HomeDB.Domain.Interfaces.Repositories
         /// </summary>
         public Task<IEnumerable<Role>> GetRolesAsync(CancellationToken cToken, bool asNoTracking = true);
 
-        //Confirma los cambios sobre la base de datos
+        /// <summary>
+        /// Confirma los cambios sobre la base de datos
+        /// </summary>
         Task SaveChangesAsync(CancellationToken cToken);
     }
 }

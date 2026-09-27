@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="Common\RecordsInfrastructure\BackupRecords.cs" />
+  </ItemGroup>
+
 </Project>

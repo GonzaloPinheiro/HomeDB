@@ -1,4 +1,5 @@
-﻿using HomeDB.Application.Services;
+﻿using HomeDB.Application.Options;
+using HomeDB.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;

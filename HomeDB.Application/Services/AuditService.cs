@@ -1,7 +1,7 @@
 ﻿using HomeDB.Application.DTOs;
 using HomeDB.Domain.Entities;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 
 namespace HomeDB.Application.Services
 {

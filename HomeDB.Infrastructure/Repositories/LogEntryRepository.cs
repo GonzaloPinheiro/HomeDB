@@ -1,3 +1,4 @@
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Infrastructure.Data;
@@ -80,7 +81,7 @@ namespace HomeDB.Infrastructure.Repositories
             //Trae solo Level y TimeStamp, nada más
             List<(string Level, DateTimeOffset TimeStamp)> relevant = (await context.Logs
                 .AsNoTracking()
-                .Where(l => l.TimeStamp >= oneDayAgo && (l.Level == "Error" || l.Level == "Warning"))
+                .Where(l => l.TimeStamp >= oneDayAgo && (l.Level == LogLevel.Error.ToString() || l.Level == LogLevel.Warning.ToString()))
                 .Select(l => new { l.Level, l.TimeStamp })
                 .ToListAsync(cToken))
                 .Select(x => (x.Level, x.TimeStamp))
@@ -104,7 +105,7 @@ namespace HomeDB.Infrastructure.Repositories
             //a SQL cuando viene precedido de un GroupBy (mismo patrón que GetHealthAsync).
             List<(string Operation, int Count)> results = (await context.Logs
                 .AsNoTracking()
-                .Where(l => l.Level == "Critical" && l.TimeStamp >= from)
+                .Where(l => l.Level == LogLevel.Critical.ToString() && l.TimeStamp >= from)
                 .GroupBy(l => l.Operation)
                 .Select(g => new { Operation = g.Key, Count = g.Count() })
                 .OrderByDescending(x => x.Count)

@@ -3,11 +3,19 @@ namespace HomeDB.Domain.Interfaces
 {
     public interface IPasswordHelper
     {
-        //Hashea la contraseña recibida
+        /// <summary>
+        /// Hashea la contraseña recibida
+        /// </summary>
         string HashPassword(string password);
-        //Verifica integridad de la contraseña recibida
+
+        /// <summary>
+        /// Verifica integridad de la contraseña recibida
+        /// </summary>
         bool VerifyPassword(string password, string storedHash);
-        //Hashea el refreshToken recibido
+
+        /// <summary>
+        /// Hashea el refreshToken recibido
+        /// </summary>
         string HashRefreshToken(string refreshToken);
     }
 }

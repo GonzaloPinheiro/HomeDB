@@ -2,8 +2,8 @@
 using HomeDB.Application.Options;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
-using HomeDB.Domain.Interfaces;
 using HomeDB.Domain.Interfaces.Repositories;
+using HomeDB.Domain.Interfaces.Services;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Application.Services
