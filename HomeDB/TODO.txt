@@ -1,7 +1,5 @@
-
--Añadir al .env la ruta del disco 2 para el backup de los archivos - ${BACKUP_HOST_PATH}:/storage/backups
-
-- Crear la migración de el sistema de backups 
+- Al hacer un backup, si falla el registro solo se mete en la tabla de los backups, pero no se genera un log de error.
+- Hacer que los background services hagan logs para llevar un control de estos.
 
 - Revisar launchSettings.json para ver si es necesario cambiar algo
 
