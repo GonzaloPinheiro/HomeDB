@@ -25,7 +25,7 @@ namespace HomeDB.DependencyInjection
 
             services.AddRateLimiter(options =>
             {
-                // Global: 100 req/min por IP
+                // Global: 500 req/min por IP
                 options.AddPolicy(nameof(RateLimiterNames.Global), context =>
                 {
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
