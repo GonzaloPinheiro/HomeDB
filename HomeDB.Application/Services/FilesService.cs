@@ -113,10 +113,43 @@ namespace HomeDB.Application.Services
         #endregion
 
         /// <summary>
-        /// Descarga un archivo del disco del servidor verificando que el usuario tenga permiso para acceder a él. 
+        /// Descarga un archivo del disco del servidor verificando que el usuario tenga permiso para acceder a él.
         /// Devuelve un DTO con la ruta del archivo en el disco, su nombre original y su tipo de contenido.
         /// </summary>
         public async Task<DownloadFileResponseDto> DownloadFileAsync(int fileId, int userId, CancellationToken cToken)
+        {
+            //Validar que el archivo existe, pertenece al usuario y está presente en disco
+            FileItem fileItem = await GetValidatedFileItemAsync(fileId, userId, cToken);
+
+            //Obtener la ruta del archivo en el disco usando el StoredName
+            string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
+
+            //AuditLog
+            await _auditService.LogAsync(AuditLogActions.DownloadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
+            //Todo Ok
+            return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+        }
+
+        /// <summary>
+        /// Obtiene la ruta de un archivo para servirlo en streaming.
+        /// </summary>
+        public async Task<DownloadFileResponseDto> StreamFileAsync(int fileId, int userId, CancellationToken cToken)
+        {
+            //Validar que el archivo existe, pertenece al usuario y está presente en disco
+            FileItem fileItem = await GetValidatedFileItemAsync(fileId, userId, cToken);
+
+            //Obtener la ruta del archivo en el disco usando el StoredName
+            string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
+
+            //Todo Ok
+            return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+        }
+
+        /// <summary>
+        /// Busca un FileItem por su Id y verifica que pertenezca al usuario y que exista físicamente en disco.
+        /// </summary>
+        private async Task<FileItem> GetValidatedFileItemAsync(int fileId, int userId, CancellationToken cToken)
         {
             // Buscar el FileItem por su Id
             FileItem? fileItem = await _fileItemRepository.GetByIdAsync(fileId, cToken);
@@ -133,14 +166,7 @@ namespace HomeDB.Application.Services
             if (!_fileStorageService.Exists(fileItem.StoredName))
                 throw new InvalidOperationException($"FileItem {fileId} registrado en BD pero el archivo físico no existe."); //TODO Crear una excepción personalizada para este caso, que borre el registro de la base de datos?.
 
-            //Obtener la ruta del archivo en el disco usando el StoredName
-            string filePath = _fileStorageService.GetFilePath(fileItem.StoredName);
-
-            //AuditLog
-            await _auditService.LogAsync(AuditLogActions.DownloadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
-
-            //Todo Ok
-            return new DownloadFileResponseDto(filePath, fileItem.FileName, fileItem.ContentType);
+            return fileItem;
         }
 
         /// <summary>

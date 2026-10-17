@@ -115,6 +115,31 @@ namespace HomeDB.Controllers
         }
 
         /// <summary>
+        /// Sirve un archivo específico por su ID en modo streaming, con soporte de range processing para permitir seek en reproductores de video/audio.
+        /// </summary>
+        [HttpGet]
+        [Route("{id:int}/stream")]
+        public async Task<IActionResult> StreamFileAsync(int id, CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.FilesController",
+                operation: "StreamFileAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Obtener los datos del archivo para servirlo en streaming
+            DownloadFileResponseDto result = await _filesService.StreamFileAsync(id, userId, cToken);
+
+            //Devolver el archivo (200) sin forzar descarga, habilitando range processing para seek
+            return PhysicalFile(result.FilePath, result.ContentType, enableRangeProcessing: true);
+        }
+
+        /// <summary>
         /// Hace una búsqueda entre todos los archivos para los parámetros recibidos
         /// </summary>
         [HttpGet]
