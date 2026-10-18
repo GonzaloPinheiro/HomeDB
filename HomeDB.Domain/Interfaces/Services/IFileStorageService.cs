@@ -10,6 +10,12 @@ namespace HomeDB.Domain.Interfaces.Services
         Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken);
 
         /// <summary>
+        /// Mueve un archivo ya existente en disco (p. ej. un temporal ensamblado) a su ubicación final, evitando
+        /// una segunda copia completa del contenido cuando origen y destino están en el mismo volumen.
+        /// </summary>
+        Task SaveFromPathAsync(string sourceFilePath, string storedName, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Elimina el fichero físico del disco si existe.
         /// </summary>
         Task DeleteAsync(string storedName, CancellationToken cancellationToken);

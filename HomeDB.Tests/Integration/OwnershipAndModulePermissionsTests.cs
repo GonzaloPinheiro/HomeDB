@@ -2,6 +2,7 @@ using HomeDB.Application.DTOs;
 using HomeDB.Application.DTOs.Auth;
 using HomeDB.Application.DTOs.Files;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Tests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
@@ -286,7 +287,7 @@ namespace HomeDB.Tests.Integration
         }
 
         //Sube un único archivo (chunk único con firma PNG) usando el cliente indicado y devuelve el Id resultante.
-        private static async Task<int> UploadSingleFileAsync(HttpClient client, string fileName)
+        private async Task<int> UploadSingleFileAsync(HttpClient client, string fileName)
         {
             byte[] chunk = new byte[ChunkSizeBytes];
             new Random(fileName.GetHashCode()).NextBytes(chunk);
@@ -317,13 +318,15 @@ namespace HomeDB.Tests.Integration
             HttpResponseMessage chunkResponse = await client.PostAsync("/api/files/upload/chunk", chunkContent);
             Assert.Equal(HttpStatusCode.OK, chunkResponse.StatusCode);
 
+            //El ensamblado ocurre en background: /complete solo encola y responde 202 al instante.
             HttpResponseMessage completeResponse = await client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
-            Assert.Equal(HttpStatusCode.OK, completeResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, completeResponse.StatusCode);
 
-            ApiObjResponse<UploadFileResponseDto>? completeBody =
-                await completeResponse.Content.ReadFromJsonAsync<ApiObjResponse<UploadFileResponseDto>>();
+            //Esperar a que el worker termine de ensamblar antes de devolver el Id del archivo resultante.
+            UploadStatusResponseDto finalStatus = await WaitForUploadTerminalStatusAsync(client, sessionId);
+            Assert.Equal(UploadSessionStatus.Completed, finalStatus.Status);
 
-            return completeBody!.Data!.Id;
+            return finalStatus.File!.Id;
         }
 
         //Crea una carpeta usando el cliente indicado y devuelve el Id resultante.

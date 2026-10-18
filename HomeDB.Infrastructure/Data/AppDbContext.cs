@@ -57,6 +57,7 @@ namespace HomeDB.Infrastructure.Data
                 entity.HasKey(session => session.Id);
                 entity.HasIndex(session => session.SessionId).IsUnique();
                 entity.Property(session => session.Status).HasConversion<string>();
+                entity.Property(session => session.ErrorCode).HasConversion<string>();
             });
 
             modelBuilder.Entity<UploadChunk>(entity =>

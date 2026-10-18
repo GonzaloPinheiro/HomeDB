@@ -1,4 +1,5 @@
 ﻿
+using HomeDB.Domain.Common;
 using HomeDB.Domain.Common.Enums;
 
 namespace HomeDB.Domain.Entities
@@ -15,6 +16,8 @@ namespace HomeDB.Domain.Entities
         public int OwnerId { get; set; } //Id del usuario que inició la sesión de carga.
         public int? FolderId { get; set; } //Id de la carpeta donde se almacenará el archivo cargado (opcional).
         public UploadSessionStatus Status { get; set; } = UploadSessionStatus.InProgress; //Estado actual de la sesión de carga.
+        public ApiErrorCodes? ErrorCode { get; set; } //Código de error si la sesión de carga falló o fue cancelada.
+        public int? ResultFileItemId { get; set; } //Id del FileItem creado al completar la subida con éxito.
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow; //Fecha y hora en que se creó la sesión de carga.
         public DateTimeOffset? LastActivityAt { get; set; } = null; //Fecha y hora de la última actividad de la sesión. Usado para detectar sesiones huérfanas.
 

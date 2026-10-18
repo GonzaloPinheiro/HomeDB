@@ -1,6 +1,7 @@
 using HomeDB.Application.DTOs;
 using HomeDB.Application.DTOs.Files;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using HomeDB.Tests.Infrastructure;
 using System.Net;
 using System.Net.Http.Json;
@@ -91,21 +92,22 @@ namespace HomeDB.Tests.Integration
             Assert.NotNull(statusBody);
             Assert.Equal(totalChunks, statusBody!.Data!.ReceivedChunks.Count);
 
-            //Hacer la llamada al endpoint de completar la subida y comprobar que la respuesta es OK
+            //Hacer la llamada al endpoint de completar la subida: ahora solo encola el ensamblado y responde al instante
             HttpResponseMessage completeResponse = await Client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
-            Assert.Equal(HttpStatusCode.OK, completeResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, completeResponse.StatusCode);
 
-            //Comprobar que la respuesta contiene un result y data con la información del archivo subido
-            ApiObjResponse<UploadFileResponseDto>? completeBody =
-                await completeResponse.Content.ReadFromJsonAsync<ApiObjResponse<UploadFileResponseDto>>();
-            Assert.NotNull(completeBody);
-            Assert.True(completeBody!.Result);
-            Assert.Equal("integration-test-file.png", completeBody.Data!.FileName);
-            Assert.Equal(totalSizeBytes, completeBody.Data.SizeBytes);
+            //El ensamblado ocurre en background: hacer polling a /status hasta que termine
+            UploadStatusResponseDto finalStatus = await WaitForUploadTerminalStatusAsync(Client, sessionId);
+
+            //Comprobar que terminó en Completed y que el archivo resultante tiene los datos esperados
+            Assert.Equal(UploadSessionStatus.Completed, finalStatus.Status);
+            Assert.NotNull(finalStatus.File);
+            Assert.Equal("integration-test-file.png", finalStatus.File!.FileName);
+            Assert.Equal(totalSizeBytes, finalStatus.File.SizeBytes);
         }
 
         [Fact]
-        public async Task Upload_CompleteCalledTwice_SecondCallReturnsAlreadyCompletedMessage()
+        public async Task Upload_CompleteCalledTwiceAfterCompletion_SecondCallIsIdempotent()
         {
             //Crear usuario y hacer login
             const string username = "test.upload.completetwice";
@@ -137,17 +139,20 @@ namespace HomeDB.Tests.Integration
                 await Client.PostAsync(ChunkEndpoint, chunkContent);
             }
 
-            //Hacer la primera llamada al endpoint de completar la subida y comprobar que es OK
+            //Hacer la primera llamada al endpoint de completar la subida: encola el ensamblado y responde al instante
             HttpResponseMessage firstComplete = await Client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
-            Assert.Equal(HttpStatusCode.OK, firstComplete.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, firstComplete.StatusCode);
 
-            //Hacer la segunda llamada al endpoint de completar la subida y comprobar que es OK
+            //Esperar a que el worker en background termine de procesarla antes de la segunda llamada
+            UploadStatusResponseDto finalStatus = await WaitForUploadTerminalStatusAsync(Client, sessionId);
+            Assert.Equal(UploadSessionStatus.Completed, finalStatus.Status);
+
+            //Hacer la segunda llamada al endpoint de completar la subida: la sesión ya está Completed,
+            //así que debe ser un no-op idempotente y seguir respondiendo 202, no un error.
             HttpResponseMessage secondComplete = await Client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
+            Assert.Equal(HttpStatusCode.Accepted, secondComplete.StatusCode);
 
-            //Comprobar que la respuesta sigue siendo OK
-            Assert.Equal(HttpStatusCode.OK, secondComplete.StatusCode);
-
-            //Deserializar la respuesta y comprobar que contiene un result y data con el mensaje de ya completado
+            //Deserializar la respuesta y comprobar que sigue siendo un result exitoso
             ApiObjResponse<string>? secondBody =
                 await secondComplete.Content.ReadFromJsonAsync<ApiObjResponse<string>>();
             Assert.NotNull(secondBody);
@@ -325,18 +330,18 @@ namespace HomeDB.Tests.Integration
             Assert.NotNull(statusBody);
             Assert.Single(statusBody!.Data!.ReceivedChunks);
 
-            //Completar la subida
+            //Completar la subida: el ensamblado ocurre en background
             HttpResponseMessage completeResponse = await Client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
-            Assert.Equal(HttpStatusCode.OK, completeResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, completeResponse.StatusCode);
 
-            //Obtener el id del archivo subido para poder descargarlo
-            ApiObjResponse<UploadFileResponseDto>? completeBody =
-                await completeResponse.Content.ReadFromJsonAsync<ApiObjResponse<UploadFileResponseDto>>();
-            Assert.NotNull(completeBody);
+            //Esperar a que el worker termine y obtener el id del archivo resultante para poder descargarlo
+            UploadStatusResponseDto finalStatus = await WaitForUploadTerminalStatusAsync(Client, sessionId);
+            Assert.Equal(UploadSessionStatus.Completed, finalStatus.Status);
+            Assert.NotNull(finalStatus.File);
 
             //Descargar el archivo ensamblado y comprobar que su contenido es el de la segunda versión del
             //chunk, confirmando que reenviar un chunk sobrescribe en vez de ignorar o acumular
-            HttpResponseMessage downloadResponse = await Client.GetAsync($"/api/files/{completeBody!.Data!.Id}");
+            HttpResponseMessage downloadResponse = await Client.GetAsync($"/api/files/{finalStatus.File!.Id}");
             Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
             byte[] downloadedBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
@@ -387,21 +392,21 @@ namespace HomeDB.Tests.Integration
                 Assert.Equal(HttpStatusCode.OK, chunkResponse.StatusCode);
             }
 
-            //Completar la subida
+            //Completar la subida: el ensamblado ocurre en background
             HttpResponseMessage completeResponse = await Client.PostAsync($"/api/files/upload/{sessionId}/complete", null);
-            Assert.Equal(HttpStatusCode.OK, completeResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.Accepted, completeResponse.StatusCode);
 
-            //Obtener el id del archivo subido para poder descargarlo
-            ApiObjResponse<UploadFileResponseDto>? completeBody =
-                await completeResponse.Content.ReadFromJsonAsync<ApiObjResponse<UploadFileResponseDto>>();
-            Assert.NotNull(completeBody);
+            //Esperar a que el worker termine y obtener el id del archivo resultante para poder descargarlo
+            UploadStatusResponseDto finalStatus = await WaitForUploadTerminalStatusAsync(Client, sessionId);
+            Assert.Equal(UploadSessionStatus.Completed, finalStatus.Status);
+            Assert.NotNull(finalStatus.File);
 
             //Descargar el archivo ensamblado a través del endpoint de descarga de FilesController
-            HttpResponseMessage downloadResponse = await Client.GetAsync($"/api/files/{completeBody!.Data!.Id}");
+            HttpResponseMessage downloadResponse = await Client.GetAsync($"/api/files/{finalStatus.File!.Id}");
             Assert.Equal(HttpStatusCode.OK, downloadResponse.StatusCode);
 
             //Comprobar que el contenido descargado es exactamente la concatenación de los chunks
-            //originales, byte a byte, verificando que el ensamblado en CompleteUploadAsync no corrompe datos
+            //originales, byte a byte, verificando que el ensamblado en ProcessCompletionAsync no corrompe datos
             byte[] downloadedBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
             byte[] expectedBytes = chunks.SelectMany(c => c).ToArray();
             Assert.Equal(expectedBytes, downloadedBytes);

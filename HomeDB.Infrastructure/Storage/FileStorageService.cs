@@ -28,6 +28,21 @@ namespace HomeDB.Infrastructure.Storage
             await stream.CopyToAsync(fileStream, cancellationToken);
         }
 
+        public Task SaveFromPathAsync(string sourceFilePath, string storedName, CancellationToken cancellationToken)
+        {
+            //Si no existe el directorio, lo crea
+            Directory.CreateDirectory(_storageOptions.BasePath);
+
+            //Combina la ruta base con el nombre del archivo para obtener la ruta completa
+            string fullPath = Path.Combine(_storageOptions.BasePath, storedName);
+
+            //Mueve el archivo ya ensamblado a su ubicación final. Si origen y destino están en el mismo volumen
+            //es prácticamente instantáneo; si no, .NET hace copy+delete internamente sin lanzar excepción.
+            File.Move(sourceFilePath, fullPath, overwrite: true);
+
+            return Task.CompletedTask;
+        }
+
         public Task DeleteAsync(string storedName, CancellationToken cancellationToken)
         {
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa

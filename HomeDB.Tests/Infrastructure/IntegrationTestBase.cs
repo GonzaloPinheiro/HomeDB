@@ -1,7 +1,9 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using HomeDB.Application.DTOs;
 using HomeDB.Application.DTOs.Auth;
 using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace HomeDB.Tests.Infrastructure
@@ -81,6 +83,31 @@ namespace HomeDB.Tests.Infrastructure
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
             return loginResponse;
+        }
+
+        //El ensamblado de una subida ocurre en background: hace polling a /status con el cliente indicado hasta
+        //que la sesión alcanza un estado terminal (Completed o Cancelled), o lanza si no termina a tiempo.
+        protected async Task<UploadStatusResponseDto> WaitForUploadTerminalStatusAsync(HttpClient client, Guid sessionId, TimeSpan? timeout = null)
+        {
+            DateTime deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
+
+            while (DateTime.UtcNow < deadline)
+            {
+                HttpResponseMessage statusResponse = await client.GetAsync($"/api/files/upload/{sessionId}/status");
+                Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
+
+                ApiObjResponse<UploadStatusResponseDto>? statusBody =
+                    await statusResponse.Content.ReadFromJsonAsync<ApiObjResponse<UploadStatusResponseDto>>();
+                Assert.NotNull(statusBody);
+                Assert.NotNull(statusBody!.Data);
+
+                if (statusBody.Data!.Status is UploadSessionStatus.Completed or UploadSessionStatus.Cancelled)
+                    return statusBody.Data;
+
+                await Task.Delay(100);
+            }
+
+            throw new TimeoutException($"La sesión de subida {sessionId} no alcanzó un estado terminal a tiempo.");
         }
         #endregion
     }

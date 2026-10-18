@@ -1,4 +1,8 @@
 ﻿
+using HomeDB.Application.DTOs.Files;
+using HomeDB.Domain.Common;
+using HomeDB.Domain.Common.Enums;
+
 //TODO Unificar todos los dto de subida de archivos en solo este archivo (HomeDB.Application.DTOs)(HomeDB.Application.DTOs.Files)
 namespace HomeDB.Application.DTOs
 {
@@ -27,6 +31,9 @@ namespace HomeDB.Application.DTOs
     public record UploadStatusResponseDto(
         Guid SessionId,
         int TotalChunks,
-        List<int> ReceivedChunks
+        List<int> ReceivedChunks,
+        UploadSessionStatus Status,
+        UploadFileResponseDto? File,
+        ApiErrorCodes? ErrorCode
     );
 }
