@@ -10,7 +10,6 @@ using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Net;
 
 namespace HomeDB.Controllers
 {
