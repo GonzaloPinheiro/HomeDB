@@ -5,6 +5,7 @@ namespace HomeDB.Domain.Common.Enums
     public enum UploadSessionStatus
     {
         InProgress = 1,
+        Processing = 4,
         Completed = 2,
         Cancelled = 3
     }

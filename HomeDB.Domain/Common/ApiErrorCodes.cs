@@ -31,6 +31,7 @@ namespace HomeDB.Domain.Common
         InvalidChunkNumber = 1022,
         AssembledFileSizeMismatch = 1023,
         InvalidUploadRequest = 1024,
+        InvalidFileExtension = 1027,
 
         //Códigos de error relacionados con el subsistema de backups
         BackupAlreadyRunning = 1025,

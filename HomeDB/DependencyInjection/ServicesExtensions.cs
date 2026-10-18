@@ -47,6 +47,11 @@ namespace HomeDB.DependencyInjection
             // Locks en memoria compartidos entre requests: deben vivir como singleton
             services.AddSingleton<IUploadChunkLockProvider, UploadChunkLockProvider>();
 
+            // Cola de finalización de subidas: procesa el ensamblado pesado en background, fuera de la request HTTP
+            services.AddSingleton<UploadCompletionQueue>();
+            services.AddSingleton<IUploadCompletionQueue>(sp => sp.GetRequiredService<UploadCompletionQueue>());
+            services.AddHostedService(sp => sp.GetRequiredService<UploadCompletionQueue>());
+
             // Servicios de aplicación
             services.AddScoped<AuthService>();
             services.AddScoped<FilesService>();

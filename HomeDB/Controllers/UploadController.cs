@@ -10,6 +10,7 @@ using HomeDB.Infrastructure.Observability;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Net;
 
 namespace HomeDB.Controllers
 {
@@ -120,15 +121,11 @@ namespace HomeDB.Controllers
                 correlationId: correlationId,
                 userId: userId.ToString());
 
-            //Completar la sesión de carga y obtener el resultado
-            UploadFileResponseDto? response = await _uploadService.CompleteUploadAsync(sessionId, userId, cToken);
+            //Validar que la sesión esté lista y encolar el ensamblado pesado para que se procese en background
+            await _uploadService.RequestCompletionAsync(sessionId, userId, cToken);
 
-            //Si la respuesta es null, significa que la subida ya se había completado anteriormente
-            if (response is null)
-                return Ok(ApiObjResponse<string>.Success("La subida ya se había completado anteriormente."));
-
-            //Todo Ok
-            return Ok(ApiObjResponse<UploadFileResponseDto>.Success(response));
+            //202: la subida se procesa en background. El cliente debe consultar GET {sessionId}/status hasta ver Completed o Cancelled.
+            return Accepted(ApiObjResponse<string>.Success("La subida se está procesando."));
         }
     }
 }

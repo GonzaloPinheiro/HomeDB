@@ -268,6 +268,13 @@ namespace HomeDB.Middlewares
                         LogLevel.Warning,
                         $"Datos de inicio de subida inválidos. Path: {path}, Method: {method}"
                     ),
+                    InvalidFileExtensionException ifee => (
+                        StatusCodes.Status400BadRequest,
+                        ifee.Message,
+                        ApiErrorCodes.InvalidFileExtension,
+                        LogLevel.Warning,
+                        $"Extensión de archivo no permitida. Path: {path}, Method: {method}"
+                    ),
                     //
 
                     //Manejo de excepciones relacionadas con el subsistema de backups

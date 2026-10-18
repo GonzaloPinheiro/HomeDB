@@ -472,6 +472,10 @@ namespace HomeDB.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("ErrorCode")
+                        .HasColumnType("text")
+                        .HasColumnName("error_code");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -496,6 +500,10 @@ namespace HomeDB.Infrastructure.Migrations
                     b.Property<long>("ReceivedSizeBytes")
                         .HasColumnType("bigint")
                         .HasColumnName("received_size_bytes");
+
+                    b.Property<int?>("ResultFileItemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("result_file_item_id");
 
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uuid")

@@ -38,6 +38,27 @@ namespace HomeDB.Application.Services
 
         }
 
+        //Loguea en el audit log una acción genérica originada fuera de una request HTTP (p. ej. un worker en background),
+        //donde no hay ICurrentUserService disponible para resolver el usuario actual.
+        public async Task LogAsync(string action,
+                                   int userId,
+                                   string? resourceType = null,
+                                   int? resourceId = null,
+                                   string? resourceName = null,
+                                   CancellationToken cToken = default)
+        {
+            AuditLogEntry entry = new AuditLogEntry
+            {
+                UserId = userId,
+                Action = action,
+                ResourceType = resourceType,
+                ResourceId = resourceId,
+                ResourceName = resourceName
+            };
+
+            await _auditLogRepository.InsertAsync(entry, cToken);
+        }
+
         //Audit log específico para auth actions
         public async Task LogAuthAsync(int userId, string username, string? ipAddress, string action, CancellationToken cToken)
         {
