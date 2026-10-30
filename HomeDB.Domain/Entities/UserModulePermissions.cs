@@ -13,6 +13,7 @@ namespace HomeDB.Domain.Entities
         public bool FilesEnabled { get; set; } = false; //Indica si el usuario tiene acceso al módulo de archivos
         public bool ExpensesEnabled { get; set; } = false; //Indica si el usuario tiene acceso al módulo de gastos
         public bool InvestmentsEnabled { get; set; } = false; //Indica si el usuario tiene acceso al módulo de inversiones
+        public bool TorrentsEnabled { get; set; } = false; //Indica si el usuario tiene acceso al módulo de torrents
 
         //Módulos de Admin
         public bool SystemMonitorEnabled { get; set; } = false; //Indica si el usuario tiene acceso al módulo de monitorización del sistema

@@ -638,6 +638,10 @@ namespace HomeDB.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("system_monitor_enabled");
 
+                    b.Property<bool>("TorrentsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("torrents_enabled");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
                         .HasColumnName("user_id");
