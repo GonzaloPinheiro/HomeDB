@@ -6,6 +6,7 @@ namespace HomeDB.Application.DTOs
         public bool? FilesEnabled { get; set; }
         public bool? ExpensesEnabled { get; set; }
         public bool? InvestmentsEnabled { get; set; }
+        public bool? TorrentsEnabled { get; set; }
         public bool? SystemMonitorEnabled { get; set; }
         public bool? UserManagementEnabled { get; set; }
         public bool? RoleManagementEnabled { get; set; }
@@ -18,6 +19,7 @@ namespace HomeDB.Application.DTOs
         bool FilesEnabled,
         bool ExpensesEnabled,
         bool InvestmentsEnabled,
+        bool TorrentsEnabled,
         bool SystemMonitorEnabled,
         bool UserManagementEnabled,
         bool RoleManagementEnabled,

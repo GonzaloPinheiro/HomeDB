@@ -8,6 +8,7 @@ namespace HomeDB.Domain.Common.Enums
         Files, // Módulo de gestión de archivos
         Expenses, // Módulo de gestión de gastos
         Investments, // Módulo de gestión de inversiones
+        Torrents, // Módulo de gestión de torrents (mockup en el front)
         SystemMonitor, // Módulo de monitorización del sistema
         UserManagement, // Módulo de gestión de usuarios
         RoleManagement, // Módulo de gestión de roles

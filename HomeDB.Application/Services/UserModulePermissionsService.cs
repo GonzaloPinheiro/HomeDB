@@ -72,6 +72,7 @@ namespace HomeDB.Application.Services
             if (dto.FilesEnabled.HasValue) permissions.FilesEnabled = dto.FilesEnabled.Value;
             if (dto.ExpensesEnabled.HasValue) permissions.ExpensesEnabled = dto.ExpensesEnabled.Value;
             if (dto.InvestmentsEnabled.HasValue) permissions.InvestmentsEnabled = dto.InvestmentsEnabled.Value;
+            if (dto.TorrentsEnabled.HasValue) permissions.TorrentsEnabled = dto.TorrentsEnabled.Value;
             if (dto.SystemMonitorEnabled.HasValue) permissions.SystemMonitorEnabled = dto.SystemMonitorEnabled.Value;
             if (dto.UserManagementEnabled.HasValue) permissions.UserManagementEnabled = dto.UserManagementEnabled.Value;
             if (dto.RoleManagementEnabled.HasValue) permissions.RoleManagementEnabled = dto.RoleManagementEnabled.Value;
@@ -126,6 +127,7 @@ namespace HomeDB.Application.Services
                 AppModules.Files => permissions.FilesEnabled,
                 AppModules.Expenses => permissions.ExpensesEnabled,
                 AppModules.Investments => permissions.InvestmentsEnabled,
+                AppModules.Torrents => permissions.TorrentsEnabled,
                 AppModules.SystemMonitor => permissions.SystemMonitorEnabled,
                 AppModules.UserManagement => permissions.UserManagementEnabled,
                 AppModules.RoleManagement => permissions.RoleManagementEnabled,
@@ -145,6 +147,7 @@ namespace HomeDB.Application.Services
                 FilesEnabled: p.FilesEnabled,
                 ExpensesEnabled: p.ExpensesEnabled,
                 InvestmentsEnabled: p.InvestmentsEnabled,
+                TorrentsEnabled: p.TorrentsEnabled,
                 SystemMonitorEnabled: p.SystemMonitorEnabled,
                 UserManagementEnabled: p.UserManagementEnabled,
                 RoleManagementEnabled: p.RoleManagementEnabled,
