@@ -1,25 +1,26 @@
-﻿using HomeDB.Application.Options;
+﻿using HomeDB.Domain.Common;
 using HomeDB.Domain.Interfaces.Services;
-using Microsoft.Extensions.Options;
 
 namespace HomeDB.Infrastructure.Storage
 {
     public class FileStorageService : IFileStorageService
     {
-        private readonly StorageOptions _storageOptions;
+        private readonly IStorageLocationResolver _locationResolver;
 
-        public FileStorageService(IOptions<StorageOptions> options)
+        public FileStorageService(IStorageLocationResolver locationResolver)
         {
-            _storageOptions = options.Value;
+            _locationResolver = locationResolver;
         }
 
         public async Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken) //TODO MODIFICAR PARA ADAPTARLO AL SISTEMA DE CHUNKS Y SU NOMENCLATURA DE NOMBRES DE ARCHIVOS
         {
+            string basePath = _locationResolver.ResolveDefaultBasePath(LocationUsage.Personal);
+
             //Si no existe el directorio, lo crea
-            Directory.CreateDirectory(_storageOptions.BasePath);
+            Directory.CreateDirectory(basePath);
 
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa
-            string fullPath = Path.Combine(_storageOptions.BasePath, storedName);
+            string fullPath = Path.Combine(basePath, storedName);
 
             //Crea un nuevo archivo y copia el contenido del stream al archivo
             await using FileStream fileStream = new FileStream(fullPath, FileMode.Create);
@@ -30,11 +31,13 @@ namespace HomeDB.Infrastructure.Storage
 
         public Task SaveFromPathAsync(string sourceFilePath, string storedName, CancellationToken cancellationToken)
         {
+            string basePath = _locationResolver.ResolveDefaultBasePath(LocationUsage.Personal);
+
             //Si no existe el directorio, lo crea
-            Directory.CreateDirectory(_storageOptions.BasePath);
+            Directory.CreateDirectory(basePath);
 
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa
-            string fullPath = Path.Combine(_storageOptions.BasePath, storedName);
+            string fullPath = Path.Combine(basePath, storedName);
 
             //Mueve el archivo ya ensamblado a su ubicación final. Si origen y destino están en el mismo volumen
             //es prácticamente instantáneo; si no, .NET hace copy+delete internamente sin lanzar excepción.
@@ -46,7 +49,7 @@ namespace HomeDB.Infrastructure.Storage
         public Task DeleteAsync(string storedName, CancellationToken cancellationToken)
         {
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa
-            string fullPath = Path.Combine(_storageOptions.BasePath, storedName);
+            string fullPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Personal), storedName);
 
             //Si el archivo existe, lo elimina
             if (File.Exists(fullPath))
@@ -59,7 +62,7 @@ namespace HomeDB.Infrastructure.Storage
         public bool Exists(string storedName)
         {
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa
-            string fullPath = Path.Combine(_storageOptions.BasePath, storedName);
+            string fullPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Personal), storedName);
 
             //Devuelve true si el archivo existe, de lo contrario devuelve false
             return File.Exists(fullPath);
@@ -68,7 +71,7 @@ namespace HomeDB.Infrastructure.Storage
         public string GetFilePath(string storedName)
         {
             //Devuelva la ruta completa del archivo combinando la ruta base con el nombre del archivo almacenado
-            return Path.Combine(_storageOptions.BasePath, storedName);
+            return Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Personal), storedName);
         }
     }
 }

@@ -39,8 +39,20 @@ namespace HomeDB.Tests.Infrastructure
             builder.UseSetting("RateLimiting:Global:Enabled", "false");
             builder.UseSetting("Jwt:Key", "TestOnlyJwtSigningKey_MustBeAtLeast32CharsLong");
             builder.UseSetting("Jwt:Issuer", "HomeDB_Test_Issuer");
-            builder.UseSetting("Storage:BasePath", Path.Combine(_storageRootPath, "files"));
-            builder.UseSetting("Storage:TempUploadsPath", Path.Combine(_storageRootPath, "temp-uploads"));
+            builder.UseSetting("Storage:Disks:0:Key", "test");
+            builder.UseSetting("Storage:Disks:0:Path", _storageRootPath);
+            builder.UseSetting("Storage:Disks:0:StartupPolicy", "Required");
+            builder.UseSetting("Storage:Disks:0:MinFreeBytes", "0");
+            builder.UseSetting("Storage:Disks:0:Locations:0:Key", "main");
+            builder.UseSetting("Storage:Disks:0:Locations:0:Usage", "Personal");
+            builder.UseSetting("Storage:Disks:0:Locations:0:IsDefault", "true");
+            builder.UseSetting("Storage:Disks:0:Locations:0:SubPath", "files");
+            builder.UseSetting("Storage:Disks:0:Locations:0:IncludeInBackup", "true");
+            builder.UseSetting("Storage:Disks:0:Locations:1:Key", "temp");
+            builder.UseSetting("Storage:Disks:0:Locations:1:Usage", "Temp");
+            builder.UseSetting("Storage:Disks:0:Locations:1:IsDefault", "true");
+            builder.UseSetting("Storage:Disks:0:Locations:1:SubPath", "temp-uploads");
+            builder.UseSetting("Storage:Disks:0:Locations:1:IncludeInBackup", "false");
             builder.UseSetting("LogFallback:BasePath", Path.Combine(_storageRootPath, "logs", "failed-logs"));
         }
 

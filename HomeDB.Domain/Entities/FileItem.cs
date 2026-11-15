@@ -7,6 +7,7 @@ namespace HomeDB.Domain.Entities
         public int Id { get; set; } //PK
         public string FileName { get; set; } = string.Empty;   // Nombre original
         public string StoredName { get; set; } = string.Empty; // GUID en disco
+        public string LocationKey { get; set; } = string.Empty; // Clave de la ubicación (Storage:Disks[].Locations[]) donde vive el archivo
         public long SizeBytes { get; set; } // Tamaño del archivo en bytes
         public string ContentType { get; set; } = string.Empty; // Content-Type/MIME del archivo
         public int? FolderId { get; set; } // Id de la carpeta donde se almacena (null = raíz)

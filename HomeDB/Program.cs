@@ -1,5 +1,6 @@
 using HomeDB.Common;
 using HomeDB.DependencyInjection;
+using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Data;
 using HomeDB.Middlewares;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -96,6 +97,23 @@ using (IServiceScope scope = app.Services.CreateScope())
 {
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // --------------------------- Validación de claves de ubicación --------------------------- //
+    //Las claves de ubicación no se renombran nunca (ver módulo de almacenamiento multi-ubicación), así que
+    //cualquier clave guardada en FileItems que ya no exista en la config es una inconsistencia real -no un
+    //disco temporalmente desconectado-, y se detiene el arranque en vez de dejar archivos irresolubles.
+    IStorageLocationResolver locationResolver = scope.ServiceProvider.GetRequiredService<IStorageLocationResolver>();
+    HashSet<string> configuredLocationKeys = locationResolver.GetAllLocationKeys().ToHashSet(StringComparer.OrdinalIgnoreCase);
+    List<string> missingLocationKeys = db.FileItems
+        .Select(f => f.LocationKey)
+        .Distinct()
+        .AsEnumerable()
+        .Where(key => !configuredLocationKeys.Contains(key))
+        .ToList();
+
+    if (missingLocationKeys.Count > 0)
+        throw new InvalidOperationException(
+            $"Hay archivos en base de datos con claves de ubicación que no existen en Storage:Disks: {string.Join(", ", missingLocationKeys)}.");
 }
 
 // --------------------------- Health Checks --------------------------- //

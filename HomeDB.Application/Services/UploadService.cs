@@ -29,13 +29,14 @@ namespace HomeDB.Application.Services
         private readonly UserAdminSettingsService _userAdminSettingsService;
         private readonly IUploadCompletionQueue _completionQueue;
         private readonly StorageOptions _storageOptions;
+        private readonly IStorageLocationResolver _locationResolver;
 
         //Constructores
         public UploadService(IUploadSessionRepository uploadSessionRepository, IFolderRepository folderRepository,
                              IFileItemRepository fileItemRepository, IUploadChunkLockProvider lockProvider, IUploadChunkRepository uploadChunkRepository,
                              IFileStorageService fileStorageService, IFileTypeValidator fileTypeValidator, IContentTypeResolver contentTypeResolver,
                              AuditService auditService, UserAdminSettingsService userAdminSettingsService, IUploadCompletionQueue completionQueue,
-                             IOptions<StorageOptions> storageOptions)
+                             IOptions<StorageOptions> storageOptions, IStorageLocationResolver locationResolver)
         {
             _uploadSessionRepository = uploadSessionRepository;
             _folderRepository = folderRepository;
@@ -49,6 +50,7 @@ namespace HomeDB.Application.Services
             _userAdminSettingsService = userAdminSettingsService;
             _completionQueue = completionQueue;
             _storageOptions = storageOptions.Value;
+            _locationResolver = locationResolver;
         }
 
         /// <summary>
@@ -142,7 +144,7 @@ namespace HomeDB.Application.Services
             await chunkLock.WaitAsync(cToken);
 
             //Obtener la ruta de la carpeta temporal para almacenar los chunks de la sesión
-            string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+            string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
             //Crear la ruta completa del archivo temporal para el chunk específico
             string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{request.ChunkNumber}");
@@ -340,7 +342,7 @@ namespace HomeDB.Application.Services
                 throw new UploadSessionNotFoundException(sessionId.ToString());
 
             //Crear la ruta de la carpeta temporal para almacenar los chunks de la sesión
-            string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+            string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
             //Crear la ruta completa del archivo ensamblado temporal
             string assembledTempPath = Path.Combine(sessionFolderPath, "assembled.tmp");
@@ -427,6 +429,7 @@ namespace HomeDB.Application.Services
                 {
                     FileName = session.FileName,
                     StoredName = storedName,
+                    LocationKey = _locationResolver.ResolveDefaultLocationKey(LocationUsage.Personal),
                     SizeBytes = assembledSizeBytes,
                     ContentType = contentType!,
                     FolderId = session.FolderId,
@@ -495,7 +498,7 @@ namespace HomeDB.Application.Services
             foreach (UploadSession session in finishedSessions)
             {
                 //Crear la ruta de la carpeta temporal para la sesión específica
-                string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+                string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
                 //Red de seguridad: la sesión ya está en estado terminal, así que sus locks ya no deberían usarse.
                 _lockProvider.ReleaseSessionLocks(session.SessionId);

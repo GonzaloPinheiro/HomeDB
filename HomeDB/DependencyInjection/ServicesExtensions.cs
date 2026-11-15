@@ -41,6 +41,7 @@ namespace HomeDB.DependencyInjection
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddSingleton<IStorageLocationResolver, StorageLocationResolver>();
             services.AddSingleton<IFileTypeValidator, MimeDetectiveFileTypeValidator>();
             services.AddSingleton<IContentTypeResolver, ContentTypeResolver>();
 
