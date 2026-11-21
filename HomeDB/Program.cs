@@ -2,6 +2,7 @@ using HomeDB.Common;
 using HomeDB.DependencyInjection;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Data;
+using HomeDB.Infrastructure.Storage;
 using HomeDB.Middlewares;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +96,12 @@ app.UseAuthorization();
 // --------------------------- Migraciones automáticas --------------------------- //
 using (IServiceScope scope = app.Services.CreateScope())
 {
+    // --------------------------- Política de arranque de los discos --------------------------- //
+    //Antes de migrar: si falta un disco Required, la API no arranca y no se toca la base de datos.
+    //Un disco Optional ausente solo deja un aviso Critical (que se persiste cuando arranque el host).
+    StorageStartupValidator storageStartupValidator = scope.ServiceProvider.GetRequiredService<StorageStartupValidator>();
+    await storageStartupValidator.ValidateAsync();
+
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 

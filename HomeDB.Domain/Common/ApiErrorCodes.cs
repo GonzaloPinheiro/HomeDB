@@ -37,6 +37,9 @@ namespace HomeDB.Domain.Common
         BackupAlreadyRunning = 1025,
         BackupLevelNotSupported = 1026,
 
+        //Códigos de error relacionados con el almacenamiento multi-ubicación
+        StorageLocationUnavailable = 1028,
+
         //Codigos de errores críticos
         InternalError = 9999
     }

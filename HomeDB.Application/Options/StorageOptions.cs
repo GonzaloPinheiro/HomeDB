@@ -13,6 +13,10 @@ namespace HomeDB.Application.Options
         [Range(1, long.MaxValue, ErrorMessage = "El límite de almacenamiento debe ser un valor positivo.")]
         public long? StorageLimitBytes { get; set; } = null;
 
+        //Cada cuántos segundos el vigilante en segundo plano vuelve a comprobar todos los discos (marcador y escritura).
+        [Range(5, 3600, ErrorMessage = "El intervalo de comprobación de discos debe estar entre 5 y 3600 segundos.")]
+        public int AvailabilityCheckIntervalSeconds { get; set; } = 60;
+
         //Discos físicos. Cada uno agrupa varias ubicaciones lógicas que comparten disponibilidad y política de arranque.
         [MinLength(1, ErrorMessage = "Debe declararse al menos un disco.")]
         public List<DiskOptions> Disks { get; set; } = new();

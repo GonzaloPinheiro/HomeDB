@@ -29,12 +29,45 @@ namespace HomeDB.Infrastructure.Storage
             return location.Key;
         }
 
+        public string ResolveDefaultDiskKey(LocationUsage usage)
+        {
+            (DiskOptions disk, _) = FindDefaultLocation(usage);
+            return disk.Key;
+        }
+
+        public string ResolveBasePath(string locationKey)
+        {
+            (DiskOptions disk, StorageLocationOptions location) = FindLocation(locationKey);
+            return Path.Combine(disk.Path, location.SubPath);
+        }
+
+        public string ResolveDiskKey(string locationKey)
+        {
+            (DiskOptions disk, _) = FindLocation(locationKey);
+            return disk.Key;
+        }
+
         public IReadOnlyCollection<string> GetAllLocationKeys()
         {
             return _storageOptions.Disks
                 .SelectMany(disk => disk.Locations)
                 .Select(location => location.Key)
                 .ToList();
+        }
+
+        private (DiskOptions Disk, StorageLocationOptions Location) FindLocation(string locationKey)
+        {
+            foreach (DiskOptions disk in _storageOptions.Disks)
+            {
+                foreach (StorageLocationOptions location in disk.Locations)
+                {
+                    if (string.Equals(location.Key, locationKey, StringComparison.OrdinalIgnoreCase))
+                        return (disk, location);
+                }
+            }
+
+            //No debería ocurrir: al arrancar se valida que toda clave guardada en base de datos exista en la config.
+            throw new InvalidOperationException($"La ubicación '{locationKey}' no está declarada en Storage:Disks.");
         }
 
         private (DiskOptions Disk, StorageLocationOptions Location) FindDefaultLocation(LocationUsage usage)
