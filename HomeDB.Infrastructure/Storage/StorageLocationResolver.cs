@@ -47,6 +47,15 @@ namespace HomeDB.Infrastructure.Storage
             return disk.Key;
         }
 
+        public IReadOnlyCollection<string> GetBackupLocationKeys()
+        {
+            return _storageOptions.Disks
+                .SelectMany(disk => disk.Locations)
+                .Where(location => location.IncludeInBackup)
+                .Select(location => location.Key)
+                .ToList();
+        }
+
         public IReadOnlyCollection<string> GetAllLocationKeys()
         {
             return _storageOptions.Disks

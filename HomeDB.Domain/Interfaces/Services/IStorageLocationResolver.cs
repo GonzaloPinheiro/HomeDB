@@ -30,6 +30,11 @@ namespace HomeDB.Domain.Interfaces.Services
         string ResolveDiskKey(string locationKey);
 
         /// <summary>
+        /// Devuelve las claves de las ubicaciones marcadas con IncludeInBackup, en el orden de la configuración.
+        /// </summary>
+        IReadOnlyCollection<string> GetBackupLocationKeys();
+
+        /// <summary>
         /// Devuelve todas las claves de ubicación declaradas en la configuración, de todos los discos.
         /// </summary>
         IReadOnlyCollection<string> GetAllLocationKeys();

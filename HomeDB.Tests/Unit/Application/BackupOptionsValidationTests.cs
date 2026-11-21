@@ -9,14 +9,13 @@ namespace HomeDB.Tests.Unit.Application
     public sealed class BackupOptionsValidationTests
     {
         [Fact]
-        public void BackupOptions_WhenDailyDirectoryMissing_ThrowsOnResolve()
+        public void BackupOptions_WhenDailyRunAtHourOutOfRange_ThrowsOnResolve()
         {
             ServiceCollection services = new ServiceCollection();
             services.AddOptions<BackupOptions>()
                     .Configure(options =>
                     {
-                        options.SourceDirectory = "/source";
-                        options.Daily.Directory = string.Empty; //Directorio vacío: debe fallar por [Required]/[MinLength] en BackupLevelOptions
+                        options.Daily.RunAtHourUtc = 24; //Fuera de rango: debe fallar por [Range(0, 23)] en BackupLevelOptions
                     })
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
@@ -33,8 +32,8 @@ namespace HomeDB.Tests.Unit.Application
             services.AddOptions<BackupOptions>()
                     .Configure(options =>
                     {
-                        options.SourceDirectory = "/source";
-                        options.Daily.Directory = "/backups/daily";
+                        options.Daily.RunAtHourUtc = 3;
+                        options.Daily.IntervalHours = 24;
                     })
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
@@ -42,7 +41,7 @@ namespace HomeDB.Tests.Unit.Application
             using ServiceProvider provider = services.BuildServiceProvider();
 
             BackupOptions resolved = provider.GetRequiredService<IOptions<BackupOptions>>().Value;
-            Assert.Equal("/backups/daily", resolved.Daily.Directory);
+            Assert.Equal(3, resolved.Daily.RunAtHourUtc);
         }
     }
 }

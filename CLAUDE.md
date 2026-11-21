@@ -50,6 +50,7 @@ Config `Storage:Disks[]`: cada disco (`Key`, `Path`, `StartupPolicy` Required/Op
 - Todo acceso a ficheros pasa por `IFileStorageService`, que llama a `IStorageAvailabilityService.EnsureAvailable` antes de leer, escribir o borrar. **Nunca `Directory.CreateDirectory` ni escrituras en una ubicación antes de esa comprobación**: con el disco ausente crearían la carpeta en el disco principal.
 - Para rutas usar `IStorageLocationResolver` (por uso por defecto o por clave de ubicación), nunca rutas literales.
 - Arranque: `ValidateStorageDisksAsync()` (antes de migrar) y `ValidateStoredLocationKeys()` (después), en `HomeDB/DependencyInjection/StorageStartupExtensions.cs`. En ejecución, `StorageAvailabilityBackgroundService` vigila los discos.
+- Backups: el origen son las ubicaciones con `IncludeInBackup` (un `rsync` por ubicación hacia `backup_actual/<clave>`) y el destino la ubicación por defecto de uso `Backups` + `daily`. `BackupService` comprueba todos los discos implicados antes de tocar nada. Una ubicación de uso `Backups` no puede tener `IncludeInBackup`.
 - `GET api/storage/locations` (módulo `SystemMonitor`) expone el estado; el monitor de sistema sigue leyendo `/` (disco principal de la Pi).
 - En tests de integración un disco debe tener su marcador (ver `HomeDbApiFactory`); `SimulateDiskUnavailable()` lo borra y lo restaura al hacer `Dispose`.
 

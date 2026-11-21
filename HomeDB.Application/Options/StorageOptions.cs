@@ -75,6 +75,10 @@ namespace HomeDB.Application.Options
                         defaultsPerUsage[location.Usage] = count + 1;
                     }
 
+                    //Una ubicación de backups no puede entrar en el backup: la copia se guarda dentro de ella y se copiaría a sí misma.
+                    if (location.Usage == LocationUsage.Backups && location.IncludeInBackup)
+                        results.Add(new ValidationResult($"Disks[{diskIndex}].Locations[{locationIndex}] ({location.Key}): una ubicación de uso Backups no puede tener IncludeInBackup."));
+
                     //Las claves de ubicación son únicas en toda la configuración.
                     if (!string.IsNullOrEmpty(location.Key) && !locationKeys.Add(location.Key))
                         results.Add(new ValidationResult($"La clave de ubicación '{location.Key}' está duplicada."));

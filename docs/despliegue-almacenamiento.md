@@ -163,6 +163,56 @@ El monitor de sistema (`api/system-metrics`) es independiente: sus campos de dis
 contenedor, es decir, el sistema de ficheros principal de la Pi donde viven Docker y PostgreSQL. Verificar en la Pi que
 sus cifras coinciden con `df -h /` del host.
 
+## Backups
+
+El backup diario (`Backup:Daily`: hora `RunAtHourUtc`, intervalo `IntervalHours`) no tiene rutas propias: lee de las
+ubicaciones.
+
+- **Qué se copia:** todas las ubicaciones con `IncludeInBackup: true` (hoy solo `main`), más un volcado de la base de datos.
+- **Dónde se guarda:** en la ubicación por defecto de uso `Backups`, subcarpeta `daily`
+  (hoy `/mnt/hdd2/backups/daily` en el host). Una ubicación de uso `Backups` no puede tener `IncludeInBackup`: la API no arranca.
+- **Estructura** (se conservan dos generaciones):
+
+  ```
+  daily/
+    backup_actual/
+      main/              ← copia de la ubicación "main" (una carpeta por ubicación, con su clave)
+      database.dump      ← pg_dump en formato custom
+    backup_anterior/     ← la generación anterior
+  ```
+
+  Cada ubicación se copia con su propio `rsync`; los ficheros sin cambios son enlaces duros a la copia anterior, así que
+  ambas generaciones deben estar en el mismo disco (lo están).
+- **Antes de rotar o tocar el registro de auditoría** se comprueba que el disco de backups es escribible y que cada
+  disco de origen está disponible. Si no, el backup se aborta: el manual responde 503 (código 1028) y el automático deja
+  un `Error` en Registros. No se crea registro en el historial. Sin esta comprobación, un disco de origen ausente
+  produciría una copia vacía y la rotación descartaría la última copia buena.
+- Una ubicación que todavía no tiene carpeta (no ha recibido ningún archivo) se omite: no hay nada que copiar.
+
+### Verificar los backups
+
+```bash
+# Lanzar uno manualmente (sesión de admin con el módulo SystemMonitor): POST /api/backup/Daily/trigger
+ls /mnt/hdd2/backups/daily/backup_actual        # debe haber una carpeta "main" y database.dump
+sudo umount /mnt/hdd2
+# Lanzar otro: debe responder 503 y no rotar nada
+sudo mount /mnt/hdd2
+ls /mnt/hdd2/backups/daily                      # backup_actual y, si ya hubo dos ejecuciones, backup_anterior
+```
+
+### Restaurar (sin probar)
+
+Estos comandos no se han ejecutado nunca: probarlos en un entorno de pruebas antes de necesitarlos.
+
+```bash
+# Archivos de la ubicación "main" (con la API parada)
+sudo rsync -a /mnt/hdd2/backups/daily/backup_actual/main/ /srv/homedb/storage/files/
+
+# Base de datos (formato custom de pg_dump)
+sudo cat /mnt/hdd2/backups/daily/backup_actual/database.dump | \
+  docker exec -i homedb-db pg_restore -U homedb_user -d homedb --clean --if-exists
+```
+
 ## Qué verás cuando un disco falla
 
 | Situación | Comportamiento |
@@ -172,6 +222,7 @@ sus cifras coinciden con `df -h /` del host.
 | Un disco se cae con la API en marcha | Operaciones que lo usan: 503 con `ErrorCode` 1028. `Critical` en Registros en ≤ 60 s, un recordatorio cada 24 h mientras siga caído, y un `Information` cuando vuelve. |
 | Subida en curso con el disco temporal o personal caído | Iniciar la subida o enviar un chunk da 503. Si cae justo al completar, la sesión termina `Cancelled` con el código 1028. |
 | Borrar un archivo con su disco caído | 503; ni el archivo ni su registro se tocan. |
+| Backup con el disco de backups o uno de origen caído | Se aborta antes de rotar: 503 si es manual, `Error` en Registros si es automático. La copia buena y el historial no se tocan. |
 
 El intervalo de comprobación es `Storage:AvailabilityCheckIntervalSeconds` (60 por defecto, entre 5 y 3600).
 
@@ -190,5 +241,7 @@ Límites del diseño:
 - La comprobación por operación lee el marcador (rápido); la de escritura se refresca cada ciclo, no en cada operación.
 - No hay comprobación de espacio libre ni límites (`MinFreeBytes`, `MaxUsedBytes`) todavía: están en la configuración pero
   nada los aplica.
-- Los backups siguen usando `Backup:Daily:Directory` y `Backup:SourceDirectory` como rutas literales; aún no leen la
-  configuración de ubicaciones.
+- La rotación de backups sigue haciéndose antes de saber si el backup nuevo termina bien: dos fallos seguidos por
+  cualquier causa distinta de un disco caído (por ejemplo, un error de `rsync`) destruyen la copia buena. Pendiente de
+  rediseñar (hacer el backup en una carpeta nueva y rotar solo si termina bien).
+- Un backup abortado por un disco caído no deja registro en el historial; solo el `Error` en Registros.
