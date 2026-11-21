@@ -144,6 +144,25 @@ sudo mv /srv/homedb/storage/.homedb-location.bak /srv/homedb/storage/.homedb-loc
 docker compose up -d
 ```
 
+### 4.5 El endpoint de estado
+
+`GET /api/storage/locations` (requiere sesión y el módulo `SystemMonitor`; el rol Admin pasa siempre) devuelve una fila
+por ubicación con: clave de ubicación y de disco, uso, si es la ubicación por defecto, disponible, escribible, motivo,
+`checkedAtUtc`, total, usado y libre en bytes, `minFreeBytes` y `maxUsedBytes`. Responde 200 aunque haya discos caídos.
+
+- Tras el despliegue, comprobar que `m2-1`, `hdd1` y `hdd2` salen disponibles y con capacidad.
+- Un disco no disponible sale con `isAvailable: false`, el motivo y las cifras a `null` (nunca con la capacidad del
+  disco que contiene el punto de montaje vacío).
+- La disponibilidad es la del último ciclo del vigilante (como mucho 60 s) y la capacidad se lee en el momento: si un
+  disco cae justo entre ambos, puede salir `isAvailable: true` con las cifras a `null`.
+- Las ubicaciones de un mismo disco repiten sus cifras. No hay totales agregados: no sumar la capacidad de dos
+  ubicaciones del mismo disco.
+- "Usado" es total menos disponible para un usuario sin privilegios: en ext4 el 5 % reservado para root cuenta como usado.
+
+El monitor de sistema (`api/system-metrics`) es independiente: sus campos de disco siguen leyendo `/` dentro del
+contenedor, es decir, el sistema de ficheros principal de la Pi donde viven Docker y PostgreSQL. Verificar en la Pi que
+sus cifras coinciden con `df -h /` del host.
+
 ## Qué verás cuando un disco falla
 
 | Situación | Comportamiento |

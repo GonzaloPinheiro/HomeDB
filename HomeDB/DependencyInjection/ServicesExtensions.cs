@@ -63,6 +63,7 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<FoldersService>();
             services.AddScoped<AuditService>();
             services.AddScoped<StatisticsService>();
+            services.AddScoped<StorageStatusService>();
             services.AddScoped<UsersService>();
             services.AddScoped<RolesService>();
             services.AddScoped<UserModulePermissionsService>();

@@ -73,6 +73,25 @@ namespace HomeDB.Infrastructure.Storage
                 .ToList();
         }
 
+        public DiskCapacity? GetCapacity(string diskKey)
+        {
+            DiskOptions disk = FindDisk(diskKey);
+
+            //Sin marcador válido no se informa: la carpeta podría ser un punto de montaje vacío en el disco principal
+            if (CheckMarker(disk) != null)
+                return null;
+
+            try
+            {
+                DriveInfo drive = new DriveInfo(disk.Path);
+                return new DiskCapacity(drive.TotalSize, drive.AvailableFreeSpace);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                return null;
+            }
+        }
+
         public DiskStatus? GetCachedStatus(string diskKey)
         {
             return _cache.TryGetValue(diskKey, out DiskStatus? status) ? status : null;

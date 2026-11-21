@@ -23,6 +23,13 @@ namespace HomeDB.Domain.Interfaces.Services
         IReadOnlyList<DiskStatus> CheckAllDisks();
 
         /// <summary>
+        /// Capacidad del sistema de ficheros del disco, leída en el momento. Devuelve null si el disco no está
+        /// confirmado por su marcador: si no está montado, su carpeta es un punto de montaje vacío y su capacidad
+        /// sería la del disco que lo contiene, no la del disco ausente.
+        /// </summary>
+        DiskCapacity? GetCapacity(string diskKey);
+
+        /// <summary>
         /// Último estado guardado de un disco, o null si todavía no se ha hecho ninguna comprobación completa.
         /// </summary>
         DiskStatus? GetCachedStatus(string diskKey);

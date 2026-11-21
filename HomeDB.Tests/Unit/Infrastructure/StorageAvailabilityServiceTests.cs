@@ -183,6 +183,37 @@ namespace HomeDB.Tests.Unit.Infrastructure
             Assert.False(statuses.Single(s => s.DiskKey == "hdd2").IsAvailable);
         }
 
+        [Fact]
+        public void GetCapacity_ConfirmedDisk_ReturnsConsistentFigures()
+        {
+            WriteMarker(DiskKey);
+            StorageAvailabilityService service = CreateService();
+
+            DiskCapacity? capacity = service.GetCapacity(DiskKey);
+
+            Assert.NotNull(capacity);
+            Assert.True(capacity!.TotalBytes > 0);
+            Assert.InRange(capacity.FreeBytes, 0, capacity.TotalBytes);
+            Assert.Equal(capacity.TotalBytes - capacity.FreeBytes, capacity.UsedBytes);
+        }
+
+        [Fact]
+        public void GetCapacity_DiskWithoutMarker_ReturnsNull_InsteadOfTheContainingDisksCapacity()
+        {
+            //La carpeta existe y vive en un disco real con capacidad, pero sin marcador no es el disco esperado
+            StorageAvailabilityService service = CreateService();
+
+            Assert.Null(service.GetCapacity(DiskKey));
+        }
+
+        [Fact]
+        public void GetCapacity_UnknownDiskKey_ThrowsInvalidOperation()
+        {
+            StorageAvailabilityService service = CreateService();
+
+            Assert.Throws<InvalidOperationException>(() => service.GetCapacity("nope"));
+        }
+
         //Helpers
         private void WriteMarker(string content)
         {
