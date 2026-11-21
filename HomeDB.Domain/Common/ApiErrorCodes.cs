@@ -39,6 +39,7 @@ namespace HomeDB.Domain.Common
 
         //Códigos de error relacionados con el almacenamiento multi-ubicación
         StorageLocationUnavailable = 1028,
+        StorageLocationFull = 1029,
 
         //Codigos de errores críticos
         InternalError = 9999

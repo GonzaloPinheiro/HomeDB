@@ -71,6 +71,22 @@ namespace HomeDB.Tests.Unit.Domain
         }
 
         [Fact]
+        public void StorageLocationFullException_MentionsLocationAndReason_AndExposesThem()
+        {
+            StorageLocationFullException exception = new StorageLocationFullException("main", "not enough free space");
+
+            Assert.Equal("Storage location 'main' cannot hold this file: not enough free space.", exception.Message);
+            Assert.Equal("main", exception.LocationKey);
+            Assert.Equal("not enough free space", exception.Reason);
+        }
+
+        [Fact]
+        public void StorageLocationFull_ErrorCode_FollowsStorageLocationUnavailable()
+        {
+            Assert.Equal(1029, (int)ApiErrorCodes.StorageLocationFull);
+        }
+
+        [Fact]
         public void StorageLocationUnavailable_ErrorCode_FollowsLastUsedCode()
         {
             //1027 es InvalidFileExtension, el último código libre antes de este

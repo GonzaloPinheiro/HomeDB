@@ -301,6 +301,13 @@ namespace HomeDB.Middlewares
                         LogLevel.Warning,
                         $"Disco de almacenamiento no disponible. Disk: {slue.DiskKey}, Reason: {slue.Reason}, Path: {path}, Method: {method}"
                     ),
+                    StorageLocationFullException slfe => (
+                        StatusCodes.Status507InsufficientStorage,
+                        slfe.Message,
+                        ApiErrorCodes.StorageLocationFull,
+                        LogLevel.Warning,
+                        $"Ubicación de almacenamiento sin espacio suficiente. Location: {slfe.LocationKey}, Reason: {slfe.Reason}, Path: {path}, Method: {method}"
+                    ),
                     //
 
                     ArgumentNullException ane => (

@@ -119,6 +119,14 @@ namespace HomeDB.Infrastructure.Repositories
             //Devolver las estadísticas como una tupla
             return (totalFiles, totalSizeBytes, totalFolders);
         }
+
+        //Devolver la suma en bytes de los archivos registrados en la ubicación indicada, de todos los usuarios
+        public async Task<long> GetUsedBytesByLocationAsync(string locationKey, CancellationToken cToken)
+        {
+            return await _context.FileItems
+                .Where(f => f.LocationKey == locationKey)
+                .SumAsync(f => f.SizeBytes, cToken);
+        }
         #endregion
 
         //Elimina un archivo de la base de datos

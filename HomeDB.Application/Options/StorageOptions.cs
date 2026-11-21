@@ -79,6 +79,12 @@ namespace HomeDB.Application.Options
                     if (location.Usage == LocationUsage.Backups && location.IncludeInBackup)
                         results.Add(new ValidationResult($"Disks[{diskIndex}].Locations[{locationIndex}] ({location.Key}): una ubicación de uso Backups no puede tener IncludeInBackup."));
 
+                    //MaxUsedBytes se mide sumando los archivos registrados en la ubicación (FileItems), que solo existen en las
+                    //de uso Personal. En otra ubicación el tope nunca saltaría: se rechaza para no dar una falsa protección.
+                    //(Cuando existan los torrents, que registran sus ficheros, habrá que revisar esta regla.)
+                    if (location.MaxUsedBytes.HasValue && location.Usage != LocationUsage.Personal)
+                        results.Add(new ValidationResult($"Disks[{diskIndex}].Locations[{locationIndex}] ({location.Key}): MaxUsedBytes solo se admite en ubicaciones de uso Personal."));
+
                     //Las claves de ubicación son únicas en toda la configuración.
                     if (!string.IsNullOrEmpty(location.Key) && !locationKeys.Add(location.Key))
                         results.Add(new ValidationResult($"La clave de ubicación '{location.Key}' está duplicada."));
