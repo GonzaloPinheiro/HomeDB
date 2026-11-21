@@ -1,4 +1,5 @@
-﻿using HomeDB.Domain.Common;
+﻿using HomeDB.Application.Options;
+using HomeDB.Domain.Common;
 using HomeDB.Domain.Entities;
 using HomeDB.Domain.Interfaces.Services;
 using HomeDB.Infrastructure.Data;
@@ -6,6 +7,7 @@ using HomeDB.Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Respawn;
 using Testcontainers.PostgreSql;
@@ -92,6 +94,43 @@ namespace HomeDB.Tests.Infrastructure
             string markerPath = Path.Combine(_storageRootPath, StorageAvailabilityService.MarkerFileName);
             File.Delete(markerPath);
             return new DiskMarkerRestorer(markerPath, TestDiskKey);
+        }
+
+        //Cambia en caliente los límites de espacio del disco de pruebas (MinFreeBytes) y de su ubicación "main" (MaxUsedBytes),
+        //modificando las opciones que comparte la API. Al hacer Dispose del valor devuelto se restauran los valores
+        //anteriores, así que el uso correcto es con "using" para no afectar a otros tests de la misma colección.
+        public IDisposable LimitStorage(long minFreeBytes, long? maxUsedBytes)
+        {
+            StorageOptions storageOptions = Services.GetRequiredService<IOptions<StorageOptions>>().Value;
+            DiskOptions disk = storageOptions.Disks.Single(d => d.Key == TestDiskKey);
+            StorageLocationOptions main = disk.Locations.Single(l => l.Key == "main");
+
+            long previousMinFreeBytes = disk.MinFreeBytes;
+            long? previousMaxUsedBytes = main.MaxUsedBytes;
+
+            disk.MinFreeBytes = minFreeBytes;
+            main.MaxUsedBytes = maxUsedBytes;
+
+            return new StorageLimitsRestorer(() =>
+            {
+                disk.MinFreeBytes = previousMinFreeBytes;
+                main.MaxUsedBytes = previousMaxUsedBytes;
+            });
+        }
+
+        private sealed class StorageLimitsRestorer : IDisposable
+        {
+            private readonly Action _restore;
+
+            public StorageLimitsRestorer(Action restore)
+            {
+                _restore = restore;
+            }
+
+            public void Dispose()
+            {
+                _restore();
+            }
         }
 
         private sealed class DiskMarkerRestorer : IDisposable

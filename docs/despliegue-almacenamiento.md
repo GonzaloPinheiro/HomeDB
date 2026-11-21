@@ -213,6 +213,39 @@ sudo cat /mnt/hdd2/backups/daily/backup_actual/database.dump | \
   docker exec -i homedb-db pg_restore -U homedb_user -d homedb --clean --if-exists
 ```
 
+## Límites de espacio
+
+Dos límites configurables en `Storage:Disks`:
+
+- **`MinFreeBytes`** (por disco): espacio libre mínimo que nunca se debe rebasar al escribir. En `m2-1` vale
+  5 GiB (`5368709120`) para proteger el disco donde vive PostgreSQL; **ajustarlo al tamaño real del M.2**. En los HDD
+  vale 0 (desactivado) hasta que se decida. Como el área temporal y los archivos personales comparten `m2-1`, el mismo
+  límite protege a los dos.
+- **`MaxUsedBytes`** (por ubicación): tope de lo que HomeDB puede ocupar en ella, sumando los archivos registrados.
+  Solo se admite en ubicaciones de uso `Personal` (en otra la API no arranca); sin valor, no hay tope.
+
+Cómo se aplican a una subida de tamaño S:
+
+- **Al iniciarla** (`upload/init`): el área temporal necesita 2 x S libres (los chunks y luego el ensamblado) y la
+  ubicación personal S, más `MinFreeBytes` en cada caso, y además que no se supere `MaxUsedBytes`.
+- **Al completarla**: se vuelve a comprobar el área temporal (S, el ensamblado), porque otras subidas pueden haber
+  ocupado el espacio. Si comparte disco con la ubicación personal no se repite la de esta: mover el ensamblado es un
+  renombrado que no ocupa espacio nuevo. Si no cabe, la sesión termina `Cancelled` con el código 1029.
+- **Respuesta:** HTTP **507** con `ErrorCode` 1029 (`StorageLocationFull`) y el motivo `not enough free space` o
+  `usage limit reached`. Es distinto del 413 de la cuota del usuario (1016) y del 503 de un disco caído (1028).
+- Si no se puede leer la capacidad del disco, la subida se rechaza con 503 (1028): se prefiere rechazar a arriesgar el
+  disco de la base de datos.
+
+Límites del diseño:
+
+- `MaxUsedBytes` es un tope blando frente a subidas simultáneas: se comprueba al iniciar, no al completar.
+- No hay reserva de espacio: dos subidas que empiezan a la vez pueden pasar la comprobación y llenar el disco entre las dos.
+- "Libre" es el espacio disponible para un usuario sin privilegios: en ext4 excluye el 5 % reservado para root.
+- El borrado de archivos, los backups y las futuras descargas no pasan por esta comprobación todavía.
+
+Para verificarlo en la Pi: poner temporalmente un `MinFreeBytes` mayor que el espacio libre real de `m2-1`, reiniciar y
+comprobar que `POST /api/files/upload/init` responde 507.
+
 ## Qué verás cuando un disco falla
 
 | Situación | Comportamiento |
@@ -221,6 +254,7 @@ sudo cat /mnt/hdd2/backups/daily/backup_actual/database.dump | \
 | Disco `Optional` ausente al arrancar | La API arranca. `Critical` en Registros. |
 | Un disco se cae con la API en marcha | Operaciones que lo usan: 503 con `ErrorCode` 1028. `Critical` en Registros en ≤ 60 s, un recordatorio cada 24 h mientras siga caído, y un `Information` cuando vuelve. |
 | Subida en curso con el disco temporal o personal caído | Iniciar la subida o enviar un chunk da 503. Si cae justo al completar, la sesión termina `Cancelled` con el código 1028. |
+| Subida que no cabe (espacio libre mínimo o tope de uso) | Iniciarla da 507 con `ErrorCode` 1029. Si deja de caber al completar, la sesión termina `Cancelled` con el código 1029. |
 | Borrar un archivo con su disco caído | 503; ni el archivo ni su registro se tocan. |
 | Backup con el disco de backups o uno de origen caído | Se aborta antes de rotar: 503 si es manual, `Error` en Registros si es automático. La copia buena y el historial no se tocan. |
 
@@ -239,8 +273,7 @@ El intervalo de comprobación es `Storage:AvailabilityCheckIntervalSeconds` (60 
 Límites del diseño:
 
 - La comprobación por operación lee el marcador (rápido); la de escritura se refresca cada ciclo, no en cada operación.
-- No hay comprobación de espacio libre ni límites (`MinFreeBytes`, `MaxUsedBytes`) todavía: están en la configuración pero
-  nada los aplica.
+- Los límites de espacio solo se aplican a las subidas (ver "Límites de espacio").
 - La rotación de backups sigue haciéndose antes de saber si el backup nuevo termina bien: dos fallos seguidos por
   cualquier causa distinta de un disco caído (por ejemplo, un error de `rsync`) destruyen la copia buena. Pendiente de
   rediseñar (hacer el backup en una carpeta nueva y rotar solo si termina bien).

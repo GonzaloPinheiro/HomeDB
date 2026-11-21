@@ -31,6 +31,7 @@ namespace HomeDB.Application.Services
         private readonly StorageOptions _storageOptions;
         private readonly IStorageLocationResolver _locationResolver;
         private readonly IStorageAvailabilityService _availabilityService;
+        private readonly StorageCapacityService _capacityService;
 
         //Constructores
         public UploadService(IUploadSessionRepository uploadSessionRepository, IFolderRepository folderRepository,
@@ -38,7 +39,7 @@ namespace HomeDB.Application.Services
                              IFileStorageService fileStorageService, IFileTypeValidator fileTypeValidator, IContentTypeResolver contentTypeResolver,
                              AuditService auditService, UserAdminSettingsService userAdminSettingsService, IUploadCompletionQueue completionQueue,
                              IOptions<StorageOptions> storageOptions, IStorageLocationResolver locationResolver,
-                             IStorageAvailabilityService availabilityService)
+                             IStorageAvailabilityService availabilityService, StorageCapacityService capacityService)
         {
             _uploadSessionRepository = uploadSessionRepository;
             _folderRepository = folderRepository;
@@ -54,6 +55,7 @@ namespace HomeDB.Application.Services
             _storageOptions = storageOptions.Value;
             _locationResolver = locationResolver;
             _availabilityService = availabilityService;
+            _capacityService = capacityService;
         }
 
         /// <summary>
@@ -108,6 +110,9 @@ namespace HomeDB.Application.Services
                 if (totalSizeBytes + request.TotalSizeBytes > effectiveSettings.StorageLimitBytes.Value)
                     throw new StorageLimitExceededException(totalSizeBytes + request.TotalSizeBytes, effectiveSettings.StorageLimitBytes.Value);
             }
+
+            //Comprobar que el archivo cabe en los discos (espacio libre mínimo y tope de uso), antes de que el cliente lo envíe
+            await _capacityService.EnsureUploadFitsAsync(request.TotalSizeBytes, atCompletion: false, cToken);
 
             //Crear una nueva sesión de carga
             UploadSession session = new UploadSession
@@ -373,6 +378,10 @@ namespace HomeDB.Application.Services
                 EnsureAvailableFor(LocationUsage.Temp, forWrite: true);
                 EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
 
+                //Volver a comprobar que cabe: otras subidas pueden haber ocupado el espacio desde que se inició esta.
+                //Si no cabe, la sesión se cancela con el código StorageLocationFull.
+                await _capacityService.EnsureUploadFitsAsync(session.TotalSizeBytes, atCompletion: true, cToken);
+
                 //Concatenar los chunks en orden numérico hacia un único archivo temporal
                 await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
                 {
@@ -502,6 +511,7 @@ namespace HomeDB.Application.Services
             AssembledFileSizeMismatchException => ApiErrorCodes.AssembledFileSizeMismatch,
             InvalidFileExtensionException => ApiErrorCodes.InvalidFileExtension,
             StorageLocationUnavailableException => ApiErrorCodes.StorageLocationUnavailable,
+            StorageLocationFullException => ApiErrorCodes.StorageLocationFull,
             _ => ApiErrorCodes.InternalError
         };
 

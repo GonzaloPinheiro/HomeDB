@@ -6,6 +6,7 @@ using HomeDB.Domain.Entities;
 using HomeDB.Domain.Exceptions;
 using HomeDB.Domain.Interfaces.Repositories;
 using HomeDB.Domain.Interfaces.Services;
+using HomeDB.Infrastructure.Storage;
 using Microsoft.Extensions.Options;
 
 namespace HomeDB.Tests.Unit.Application
@@ -118,31 +119,117 @@ namespace HomeDB.Tests.Unit.Application
             await Assert.ThrowsAsync<InvalidOperationException>(() => service.EnsureFitsAsync("nope", 1, CancellationToken.None));
         }
 
-        //Helpers
-        private StorageCapacityService CreateService(long minFreeBytes, long? maxUsedBytes)
+        [Fact]
+        public async Task EnsureUploadFitsAsync_AtStart_NeedsTwiceTheSizeInTheTempArea()
         {
-            DiskOptions disk = new DiskOptions
-            {
-                Key = "m2-1",
-                Path = "/storage",
-                StartupPolicy = DiskStartupPolicy.Required,
-                MinFreeBytes = minFreeBytes,
-                Locations = new List<StorageLocationOptions>
-                {
-                    new StorageLocationOptions { Key = "main", Usage = LocationUsage.Personal, IsDefault = true, SubPath = "files", MaxUsedBytes = maxUsedBytes }
-                }
-            };
+            //Al iniciar faltan por escribir los chunks y luego el ensamblado: 2 x tamaño
+            _availability.Capacity = new DiskCapacity(Total, FreeBytes: 1000);
+            StorageCapacityService service = CreateService(minFreeBytes: 0, maxUsedBytes: null);
 
-            return new StorageCapacityService(
-                Options.Create(new StorageOptions { Disks = new List<DiskOptions> { disk } }), _availability, _repository);
+            await service.EnsureUploadFitsAsync(500, atCompletion: false, CancellationToken.None);
+
+            StorageLocationFullException exception = await Assert.ThrowsAsync<StorageLocationFullException>(
+                () => service.EnsureUploadFitsAsync(501, atCompletion: false, CancellationToken.None));
+            Assert.Equal("temp", exception.LocationKey);
         }
 
-        //Servicio de disponibilidad falso: solo importa la capacidad que devuelve
+        [Fact]
+        public async Task EnsureUploadFitsAsync_AtCompletion_NeedsOnlyTheSizeOfTheAssembledFile()
+        {
+            //Al completar los chunks ya están en disco: solo falta el ensamblado
+            _availability.Capacity = new DiskCapacity(Total, FreeBytes: 1000);
+            StorageCapacityService service = CreateService(minFreeBytes: 0, maxUsedBytes: null);
+
+            await service.EnsureUploadFitsAsync(1000, atCompletion: true, CancellationToken.None);
+
+            await Assert.ThrowsAsync<StorageLocationFullException>(
+                () => service.EnsureUploadFitsAsync(1001, atCompletion: true, CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task EnsureUploadFitsAsync_AtStart_AlsoChecksTheUsageLimitOfThePersonalLocation()
+        {
+            _availability.Capacity = new DiskCapacity(Total, FreeBytes: 1000);
+            _repository.UsedBytes = 0;
+            StorageCapacityService service = CreateService(minFreeBytes: 0, maxUsedBytes: 100);
+
+            StorageLocationFullException exception = await Assert.ThrowsAsync<StorageLocationFullException>(
+                () => service.EnsureUploadFitsAsync(101, atCompletion: false, CancellationToken.None));
+
+            Assert.Equal("main", exception.LocationKey);
+            Assert.Equal("usage limit reached", exception.Reason);
+        }
+
+        [Fact]
+        public async Task EnsureUploadFitsAsync_AtCompletionOnTheSameDisk_SkipsThePersonalCheckBecauseMovingIsARename()
+        {
+            _availability.Capacity = new DiskCapacity(Total, FreeBytes: 1000);
+            _repository.UsedBytes = 0;
+            StorageCapacityService service = CreateService(minFreeBytes: 0, maxUsedBytes: 100);
+
+            //Con tope de uso de 100 y un archivo de 500: al iniciar fallaría, pero al completar en el mismo disco no se repite
+            await service.EnsureUploadFitsAsync(500, atCompletion: true, CancellationToken.None);
+
+            Assert.Equal(0, _repository.UsedBytesQueries);
+        }
+
+        [Fact]
+        public async Task EnsureUploadFitsAsync_AtCompletionOnDifferentDisks_ChecksThePersonalDiskToo()
+        {
+            //El área temporal tiene sitio de sobra, pero el disco personal no: mover el ensamblado es una copia
+            _availability.CapacityByDisk["scratch"] = new DiskCapacity(Total, FreeBytes: 1000);
+            _availability.CapacityByDisk["m2-1"] = new DiskCapacity(Total, FreeBytes: 300);
+            StorageCapacityService service = CreateService(minFreeBytes: 0, maxUsedBytes: null, separateTempDisk: true);
+
+            StorageLocationFullException exception = await Assert.ThrowsAsync<StorageLocationFullException>(
+                () => service.EnsureUploadFitsAsync(400, atCompletion: true, CancellationToken.None));
+
+            Assert.Equal("main", exception.LocationKey);
+        }
+
+        //Helpers
+        //Por defecto, el área temporal y la ubicación personal comparten el disco "m2-1", como en producción.
+        //Con separateTempDisk, el área temporal vive en otro disco ("scratch").
+        private StorageCapacityService CreateService(long minFreeBytes, long? maxUsedBytes, bool separateTempDisk = false)
+        {
+            StorageLocationOptions main = new StorageLocationOptions
+            {
+                Key = "main", Usage = LocationUsage.Personal, IsDefault = true, SubPath = "files", MaxUsedBytes = maxUsedBytes
+            };
+            StorageLocationOptions temp = new StorageLocationOptions
+            {
+                Key = "temp", Usage = LocationUsage.Temp, IsDefault = true, SubPath = "temp-uploads"
+            };
+
+            List<DiskOptions> disks = new List<DiskOptions>
+            {
+                new DiskOptions
+                {
+                    Key = "m2-1", Path = "/storage", StartupPolicy = DiskStartupPolicy.Required, MinFreeBytes = minFreeBytes,
+                    Locations = separateTempDisk ? new List<StorageLocationOptions> { main } : new List<StorageLocationOptions> { main, temp }
+                }
+            };
+            if (separateTempDisk)
+            {
+                disks.Add(new DiskOptions
+                {
+                    Key = "scratch", Path = "/scratch", StartupPolicy = DiskStartupPolicy.Required, MinFreeBytes = minFreeBytes,
+                    Locations = new List<StorageLocationOptions> { temp }
+                });
+            }
+
+            IOptions<StorageOptions> options = Options.Create(new StorageOptions { Disks = disks });
+            return new StorageCapacityService(options, _availability, _repository, new StorageLocationResolver(options));
+        }
+
+        //Servicio de disponibilidad falso: solo importa la capacidad que devuelve. Capacity es la de cualquier disco,
+        //salvo los que aparezcan en CapacityByDisk.
         private sealed class FakeAvailabilityService : IStorageAvailabilityService
         {
             public DiskCapacity? Capacity { get; set; }
+            public Dictionary<string, DiskCapacity?> CapacityByDisk { get; } = new Dictionary<string, DiskCapacity?>();
 
-            public DiskCapacity? GetCapacity(string diskKey) => Capacity;
+            public DiskCapacity? GetCapacity(string diskKey) => CapacityByDisk.TryGetValue(diskKey, out DiskCapacity? capacity) ? capacity : Capacity;
 
             public void EnsureAvailable(string diskKey, bool forWrite) => throw new NotSupportedException();
             public DiskStatus CheckDisk(string diskKey) => throw new NotSupportedException();
