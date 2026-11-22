@@ -30,6 +30,47 @@ namespace HomeDB.Controllers
             _currentUserService = currentUserService;
         }
 
+        /// <summary>
+        /// Sube un archivo completo en una sola petición (multipart/form-data). Pensado para archivos pequeños: una
+        /// llamada por archivo en lugar de init + chunk + complete + status. El archivo no puede superar
+        /// UploadLimits.SingleUploadMaxFileBytes (20 MiB); lo que sea mayor debe subirse por chunks.
+        /// </summary>
+        [HttpPost("single")]
+        [RequestSizeGuard(UploadLimits.SingleUploadMaxRequestBytes, UploadLimits.SingleUploadMaxFileBytes)]
+        [RequestSizeLimit(UploadLimits.SingleUploadMaxRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = UploadLimits.SingleUploadMaxRequestBytes)]
+        public async Task<IActionResult> UploadSingleAsync([FromForm] IFormFile file,
+                                                           [FromForm] int? folderId,
+                                                            CancellationToken cToken)
+        {
+            //Variables y objetos
+            string correlationId = GetCorrelationId();
+            int userId = GetUserId();
+
+            //Comienza scope: registra entrada automáticamente y registrará salida al finalizar using.
+            await using OperationLogScope scope = _logger.BeginScope(
+                source: "HomeDB.Controllers.UploadController",
+                operation: "UploadSingleAsync()",
+                correlationId: correlationId,
+                userId: userId.ToString());
+
+            //Crear DTO para el servicio
+            await using Stream fileStream = file.OpenReadStream(); //Stream sin cargar en memoria
+            UploadSingleRequestDto request = new UploadSingleRequestDto
+            {
+                FileStream = fileStream,
+                FileName = file.FileName,
+                SizeBytes = file.Length,
+                FolderId = folderId
+            };
+
+            //Validar y guardar el archivo
+            UploadFileResponseDto result = await _uploadService.UploadSingleAsync(request, userId, cToken);
+
+            //Devolver resultado (201)
+            return StatusCode(201, ApiObjResponse<UploadFileResponseDto>.Success(result));
+        }
+
         [HttpPost("init")]
         public async Task<IActionResult> InitUploadSessionAsync([FromBody] UploadInitRequestDto request, CancellationToken cToken)
         {

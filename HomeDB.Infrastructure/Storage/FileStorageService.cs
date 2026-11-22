@@ -14,19 +14,38 @@ namespace HomeDB.Infrastructure.Storage
             _availabilityService = availabilityService;
         }
 
-        public async Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken) //TODO MODIFICAR PARA ADAPTARLO AL SISTEMA DE CHUNKS Y SU NOMENCLATURA DE NOMBRES DE ARCHIVOS
+        public async Task<long> SaveAsync(Stream stream, string locationKey, string storedName, CancellationToken cancellationToken)
         {
-            string locationKey = _locationResolver.ResolveDefaultLocationKey(LocationUsage.Personal);
             string basePath = PrepareForWrite(locationKey);
 
             //Combina la ruta base con el nombre del archivo para obtener la ruta completa
             string fullPath = Path.Combine(basePath, storedName);
 
-            //Crea un nuevo archivo y copia el contenido del stream al archivo
-            await using FileStream fileStream = new FileStream(fullPath, FileMode.Create);
+            //Se escribe a un fichero temporal junto al final y se renombra al terminar: un fallo o una cancelación
+            //a mitad no deja un fichero truncado con el nombre definitivo.
+            string partialPath = fullPath + ".partial";
+            long writtenBytes;
 
-            //Copia el contenido del stream al archivo de forma asíncrona
-            await stream.CopyToAsync(fileStream, cancellationToken);
+            try
+            {
+                await using (FileStream fileStream = new FileStream(partialPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+                {
+                    //Copia el contenido del stream al archivo de forma asíncrona
+                    await stream.CopyToAsync(fileStream, cancellationToken);
+                    writtenBytes = fileStream.Length;
+                }
+
+                //Mismo directorio, mismo volumen: el renombrado es atómico
+                File.Move(partialPath, fullPath, overwrite: false);
+            }
+            catch (Exception)
+            {
+                if (File.Exists(partialPath))
+                    File.Delete(partialPath);
+                throw;
+            }
+
+            return writtenBytes;
         }
 
         public async Task SaveTempAsync(Stream stream, string tempFilePath, CancellationToken cancellationToken)

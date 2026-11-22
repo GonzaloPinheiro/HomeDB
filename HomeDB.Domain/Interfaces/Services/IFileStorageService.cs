@@ -9,9 +9,11 @@ namespace HomeDB.Domain.Interfaces.Services
     public interface IFileStorageService
     {
         /// <summary>
-        /// Guarda un stream en la ubicación personal por defecto con el nombre indicado.
+        /// Guarda un stream en la ubicación indicada con el nombre indicado. Escribe primero a un fichero ".partial"
+        /// y lo renombra al terminar, de modo que un fallo a mitad no deja un fichero truncado con el nombre final.
+        /// Devuelve los bytes escritos.
         /// </summary>
-        Task SaveAsync(Stream stream, string storedName, CancellationToken cancellationToken);
+        Task<long> SaveAsync(Stream stream, string locationKey, string storedName, CancellationToken cancellationToken);
 
         /// <summary>
         /// Guarda un stream en el área temporal, en la ruta absoluta indicada (que debe estar dentro de ella).

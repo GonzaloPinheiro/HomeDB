@@ -20,6 +20,16 @@ namespace HomeDB.Application.DTOs
         Guid SessionId
     );
 
+    //DTO usado para la subida directa: un archivo completo en una sola petición. No incluye ContentType porque
+    //el que envía el cliente no es de fiar: se deduce de la extensión en el servicio.
+    public class UploadSingleRequestDto
+    {
+        public Stream FileStream { get; set; } = null!;
+        public string FileName { get; set; } = string.Empty;
+        public long SizeBytes { get; set; }
+        public int? FolderId { get; set; } //Null = carpeta raíz
+    }
+
     public class UploadChunkRequestDto
     {
         public Guid SessionId { get; set; }
