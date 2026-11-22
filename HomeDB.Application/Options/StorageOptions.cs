@@ -13,6 +13,17 @@ namespace HomeDB.Application.Options
         [Range(1, long.MaxValue, ErrorMessage = "El límite de almacenamiento debe ser un valor positivo.")]
         public long? StorageLimitBytes { get; set; } = null;
 
+        //Tope absoluto del límite de la subida directa: el appsettings puede bajarlo, pero la API no arranca si lo supera.
+        public const long SingleUploadHardMaxBytes = 20L * 1024 * 1024; //20 MiB
+
+        //Tamaño máximo de un archivo en la subida directa (api/files/upload/single), en bytes como el resto de límites.
+        //Lo que lo supere debe subirse por chunks. Si no se indica, vale el tope absoluto.
+        [Range(1, SingleUploadHardMaxBytes, ErrorMessage = "El tamaño máximo de la subida directa debe estar entre 1 y 20971520 bytes (20 MiB).")]
+        public long SingleUploadMaxFileBytes { get; set; } = SingleUploadHardMaxBytes;
+
+        //Límite de la petición completa: el archivo más 1 MiB de margen para los delimitadores multipart y los demás campos.
+        public long SingleUploadMaxRequestBytes => SingleUploadMaxFileBytes + 1024L * 1024;
+
         //Cada cuántos segundos el vigilante en segundo plano vuelve a comprobar todos los discos (marcador y escritura).
         [Range(5, 3600, ErrorMessage = "El intervalo de comprobación de discos debe estar entre 5 y 3600 segundos.")]
         public int AvailabilityCheckIntervalSeconds { get; set; } = 60;

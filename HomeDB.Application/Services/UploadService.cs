@@ -116,7 +116,7 @@ namespace HomeDB.Application.Services
         /// <summary>
         /// Sube un archivo completo en una sola petición (para archivos pequeños: evita las llamadas de init, chunk,
         /// complete y status). Aplica las mismas validaciones que la subida por chunks, con tres diferencias:
-        /// el tamaño está limitado a UploadLimits.SingleUploadMaxFileBytes, el tipo real (magic numbers) se valida
+        /// el tamaño está limitado a Storage:SingleUploadMaxFileBytes (máximo 20 MiB), el tipo real (magic numbers) se valida
         /// ANTES de escribir nada en disco, y el archivo se guarda directamente en la ubicación personal, sin pasar
         /// por el área temporal.
         /// </summary>
@@ -135,8 +135,9 @@ namespace HomeDB.Application.Services
                 throw new InvalidFileExtensionException(extension);
 
             //Límite obligatorio de la subida directa. Lo que lo supere debe subirse por chunks.
-            if (request.SizeBytes > UploadLimits.SingleUploadMaxFileBytes)
-                throw new FileTooLargeException(request.SizeBytes, UploadLimits.SingleUploadMaxFileBytes);
+            long singleUploadMaxBytes = _storageOptions.SingleUploadMaxFileBytes;
+            if (request.SizeBytes > singleUploadMaxBytes)
+                throw new FileTooLargeException(request.SizeBytes, singleUploadMaxBytes);
 
             //Fallar rápido si el disco de la ubicación personal no está disponible
             EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
@@ -181,7 +182,7 @@ namespace HomeDB.Application.Services
                 long writtenBytes = await _fileStorageService.SaveAsync(request.FileStream, locationKey, storedName, cToken);
 
                 //Defensa en profundidad: lo escrito debe coincidir con lo declarado y respetar el límite
-                if (writtenBytes != request.SizeBytes || writtenBytes > UploadLimits.SingleUploadMaxFileBytes)
+                if (writtenBytes != request.SizeBytes || writtenBytes > singleUploadMaxBytes)
                     throw new InvalidUploadRequestException($"El tamaño escrito ({writtenBytes} bytes) no coincide con el declarado ({request.SizeBytes} bytes) o supera el límite.");
 
                 //Crear el registro para la base de datos

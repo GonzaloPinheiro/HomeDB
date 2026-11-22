@@ -15,6 +15,9 @@ namespace HomeDB.Tests.Integration
         private const string SingleEndpoint = "/api/files/upload/single";
         private const string TestPassword = "Password123!";
 
+        //Límite de appsettings.json (Storage:SingleUploadMaxFileBytes = 20971520)
+        private const long ConfiguredLimitBytes = 20L * 1024 * 1024;
+
         //Firma de PNG para pasar la validación del tipo real del archivo
         private static readonly byte[] PngSignature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
@@ -60,7 +63,7 @@ namespace HomeDB.Tests.Integration
         {
             await CreateUserAndLoginAsync("test.single.atlimit", TestPassword, RolesList.Admin);
 
-            HttpResponseMessage response = await PostSingleAsync("limit.png", BuildPngBytes((int)UploadLimits.SingleUploadMaxFileBytes, seed: 2));
+            HttpResponseMessage response = await PostSingleAsync("limit.png", BuildPngBytes((int)ConfiguredLimitBytes, seed: 2));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -70,7 +73,7 @@ namespace HomeDB.Tests.Integration
         {
             await CreateUserAndLoginAsync("test.single.overlimit", TestPassword, RolesList.Admin);
 
-            HttpResponseMessage response = await PostSingleAsync("over.png", BuildPngBytes((int)UploadLimits.SingleUploadMaxFileBytes + 1, seed: 3));
+            HttpResponseMessage response = await PostSingleAsync("over.png", BuildPngBytes((int)ConfiguredLimitBytes + 1, seed: 3));
 
             Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
             ApiObjResponse<object>? body = await response.Content.ReadFromJsonAsync<ApiObjResponse<object>>();
@@ -79,6 +82,33 @@ namespace HomeDB.Tests.Integration
 
             //No debe quedar nada registrado
             Assert.Empty(await ListRootFilesAsync());
+        }
+
+        [Fact]
+        public async Task UploadSingle_LimitComesFromConfiguration()
+        {
+            await CreateUserAndLoginAsync("test.single.configlimit", TestPassword, RolesList.Admin);
+            const int oneMegabyte = 1024 * 1024;
+
+            //Con el límite bajado a 1 MiB en la configuración, 1 MiB exacto pasa y 1 byte más no
+            using (Factory.LimitSingleUpload(maxFileBytes: oneMegabyte))
+            {
+                HttpResponseMessage atLimit = await PostSingleAsync("at.png", BuildPngBytes(oneMegabyte, seed: 20));
+                Assert.Equal(HttpStatusCode.Created, atLimit.StatusCode);
+
+                HttpResponseMessage overLimit = await PostSingleAsync("over.png", BuildPngBytes(oneMegabyte + 1, seed: 21));
+                Assert.Equal(HttpStatusCode.RequestEntityTooLarge, overLimit.StatusCode);
+                ApiObjResponse<object>? body = await overLimit.Content.ReadFromJsonAsync<ApiObjResponse<object>>();
+                Assert.Equal(ApiErrorCodes.FileTooLarge, body!.ErrorCode);
+
+                //Una petición mayor que el límite de la petición completa (1 MB + 1 MiB de margen) la corta el filtro
+                HttpResponseMessage hugeBody = await PostSingleAsync("huge.png", BuildPngBytes(3 * oneMegabyte, seed: 22));
+                Assert.Equal(HttpStatusCode.RequestEntityTooLarge, hugeBody.StatusCode);
+            }
+
+            //Con la configuración restaurada vuelve a valer 20 MB
+            HttpResponseMessage restored = await PostSingleAsync("restored.png", BuildPngBytes(3 * oneMegabyte, seed: 23));
+            Assert.Equal(HttpStatusCode.Created, restored.StatusCode);
         }
 
         [Fact]

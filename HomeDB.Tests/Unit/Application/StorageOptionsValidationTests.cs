@@ -56,7 +56,72 @@ namespace HomeDB.Tests.Unit.Application
             Assert.Equal(1000, provider.GetRequiredService<IOptions<StorageOptions>>().Value.Disks[1].Locations[0].MaxUsedBytes);
         }
 
+        [Theory]
+        [InlineData(1L)]
+        [InlineData(1048576L)]  //1 MiB
+        [InlineData(20971520L)] //20 MiB: el tope
+        public void StorageOptions_SingleUploadMaxWithinRange_ResolvesAndAddsMarginForRequest(long maxFileBytes)
+        {
+            ServiceCollection services = BuildServicesWithSingleUploadMax(maxFileBytes);
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            StorageOptions resolved = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
+
+            Assert.Equal(maxFileBytes, resolved.SingleUploadMaxFileBytes);
+            Assert.Equal(maxFileBytes + 1024 * 1024, resolved.SingleUploadMaxRequestBytes);
+        }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(-5L)]
+        [InlineData(20971521L)]     //1 byte por encima del tope
+        [InlineData(524288000L)]    //500 MB: el límite global del chunked no vale aquí
+        [InlineData(10737418240L)]  //10 GB: más que int.MaxValue
+        public void StorageOptions_SingleUploadMaxOutOfRange_ThrowsOnResolve(long maxFileBytes)
+        {
+            ServiceCollection services = BuildServicesWithSingleUploadMax(maxFileBytes);
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            OptionsValidationException exception = Assert.Throws<OptionsValidationException>(
+                () => provider.GetRequiredService<IOptions<StorageOptions>>().Value);
+
+            Assert.Contains("entre 1 y 20971520 bytes", exception.Message);
+        }
+
+        [Fact]
+        public void StorageOptions_SingleUploadMaxNotConfigured_DefaultsToTwentyMebibytes()
+        {
+            Assert.Equal(20L * 1024 * 1024, new StorageOptions().SingleUploadMaxFileBytes);
+        }
+
         //Helpers
+        private static ServiceCollection BuildServicesWithSingleUploadMax(long maxFileBytes)
+        {
+            ServiceCollection services = new ServiceCollection();
+            services.AddOptions<StorageOptions>()
+                    .Configure(options =>
+                    {
+                        options.MaxFileSizeBytes = 1;
+                        options.SingleUploadMaxFileBytes = maxFileBytes;
+                        options.Disks = new List<DiskOptions>
+                        {
+                            new DiskOptions
+                            {
+                                Key = "disk",
+                                Path = "/tmp",
+                                StartupPolicy = DiskStartupPolicy.Optional,
+                                Locations = new List<StorageLocationOptions>
+                                {
+                                    new StorageLocationOptions { Key = "main", Usage = LocationUsage.Personal, IsDefault = true, SubPath = "files" }
+                                }
+                            }
+                        };
+                    })
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+            return services;
+        }
+
         private static ServiceCollection BuildServicesWithExtraLocation(LocationUsage usage, long? maxUsedBytes)
         {
             ServiceCollection services = new ServiceCollection();
