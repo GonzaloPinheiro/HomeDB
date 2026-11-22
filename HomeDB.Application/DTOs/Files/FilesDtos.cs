@@ -3,10 +3,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeDB.Application.DTOs.Files
 {
-    //Se usa para recibir la información del archivo que se va a subir desde el cliente.
-    public record UploadFileRequestDto(Stream FileStream, string FileName, long SizeBytes,
-                                    string ContentType, int? FolderId);
-
     //Se usa para proporcionar información detallada del archivo al cliente después de subirlo.
     public record UploadFileResponseDto(int Id, string FileName, long SizeBytes,
                                         string ContentType, int? FolderId, int OwnerId, DateTime UploadedAt);

@@ -59,16 +59,6 @@ namespace HomeDB.Application.Services
         }
 
         /// <summary>
-        /// Comprueba que el disco de la ubicación por defecto del uso indicado está disponible. Se usa antes de
-        /// tocar directamente el área temporal (que este servicio gestiona con System.IO) o antes de aceptar
-        /// trabajo que acabará escribiendo en ella.
-        /// </summary>
-        private void EnsureAvailableFor(LocationUsage usage, bool forWrite)
-        {
-            _availabilityService.EnsureAvailable(_locationResolver.ResolveDefaultDiskKey(usage), forWrite);
-        }
-
-        /// <summary>
         /// Crea una nueva sesión de carga de archivos y devuelve el ID de la sesión por el DTO.
         /// </summary>
         public async Task<UploadInitResponseDto> InitUploadAsync(UploadInitRequestDto request, int ownerId, CancellationToken cToken)
@@ -87,14 +77,7 @@ namespace HomeDB.Application.Services
             EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
 
             //Comprobar si la carpeta padre existe y pertenece al usuario
-            if (request.FolderId.HasValue)
-            {
-                FolderItem? folder = await _folderRepository.GetByIdAsync(request.FolderId.Value, cToken);
-                if (folder is null || folder.OwnerId != ownerId)
-                {
-                    throw new ParentFolderNotFoundException(request.FolderId.Value);
-                }
-            }
+            await EnsureFolderBelongsToUserAsync(request.FolderId, ownerId, cToken);
 
             //Obtener la configuración de administración del usuario para verificar el límite de tamaño de archivo
             UserAdminSettings effectiveSettings = await _userAdminSettingsService.GetEffectiveSettingsAsync(ownerId, cToken);
@@ -104,12 +87,7 @@ namespace HomeDB.Application.Services
                 throw new FileTooLargeException(request.TotalSizeBytes, effectiveSettings.MaxFileSizeBytes.Value);
 
             //Comprobar la cuota de almacenamiento total del usuario (solo si tiene límite configurado)
-            if (effectiveSettings.StorageLimitBytes.HasValue)
-            {
-                (int _, long totalSizeBytes, int _) = await _fileItemRepository.GetUserStatsAsync(ownerId, cToken);
-                if (totalSizeBytes + request.TotalSizeBytes > effectiveSettings.StorageLimitBytes.Value)
-                    throw new StorageLimitExceededException(totalSizeBytes + request.TotalSizeBytes, effectiveSettings.StorageLimitBytes.Value);
-            }
+            await EnsureWithinUserQuotaAsync(ownerId, request.TotalSizeBytes, effectiveSettings, cToken);
 
             //Comprobar que el archivo cabe en los discos (espacio libre mínimo y tope de uso), antes de que el cliente lo envíe
             await _capacityService.EnsureUploadFitsAsync(request.TotalSizeBytes, atCompletion: false, cToken);
@@ -133,6 +111,117 @@ namespace HomeDB.Application.Services
 
             //Devolver el ID de la sesión
             return new UploadInitResponseDto(session.SessionId);
+        }
+
+        /// <summary>
+        /// Sube un archivo completo en una sola petición (para archivos pequeños: evita las llamadas de init, chunk,
+        /// complete y status). Aplica las mismas validaciones que la subida por chunks, con tres diferencias:
+        /// el tamaño está limitado a Storage:SingleUploadMaxFileBytes (máximo 20 MiB), el tipo real (magic numbers) se valida
+        /// ANTES de escribir nada en disco, y el archivo se guarda directamente en la ubicación personal, sin pasar
+        /// por el área temporal.
+        /// </summary>
+        public async Task<UploadFileResponseDto> UploadSingleAsync(UploadSingleRequestDto request, int ownerId, CancellationToken cToken)
+        {
+            //Nombre de archivo: solo el último segmento (algunos clientes envían la ruta completa) y sin caracteres de control
+            string fileName = SanitizeFileName(request.FileName);
+
+            //Comprobar que el archivo no está vacío
+            if (request.SizeBytes <= 0)
+                throw new InvalidUploadRequestException($"El archivo no puede estar vacío. Tamaño recibido: {request.SizeBytes}.");
+
+            //Validar que la extensión está en la whitelist, antes de hacer nada más
+            string extension = Path.GetExtension(fileName);
+            if (!AllowedExtensions.Whitelist.Contains(extension))
+                throw new InvalidFileExtensionException(extension);
+
+            //Límite obligatorio de la subida directa. Lo que lo supere debe subirse por chunks.
+            long singleUploadMaxBytes = _storageOptions.SingleUploadMaxFileBytes;
+            if (request.SizeBytes > singleUploadMaxBytes)
+                throw new FileTooLargeException(request.SizeBytes, singleUploadMaxBytes);
+
+            //Fallar rápido si el disco de la ubicación personal no está disponible
+            EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
+
+            //Comprobar si la carpeta padre existe y pertenece al usuario
+            await EnsureFolderBelongsToUserAsync(request.FolderId, ownerId, cToken);
+
+            //El límite por usuario puede ser más estricto que el de la subida directa, nunca más laxo
+            UserAdminSettings effectiveSettings = await _userAdminSettingsService.GetEffectiveSettingsAsync(ownerId, cToken);
+            if (effectiveSettings.MaxFileSizeBytes.HasValue && request.SizeBytes > effectiveSettings.MaxFileSizeBytes.Value)
+                throw new FileTooLargeException(request.SizeBytes, effectiveSettings.MaxFileSizeBytes.Value);
+
+            //Comprobar la cuota de almacenamiento total del usuario
+            await EnsureWithinUserQuotaAsync(ownerId, request.SizeBytes, effectiveSettings, cToken);
+
+            //Ubicación final del archivo: se calcula una sola vez para que el guardado físico y el registro en
+            //base de datos no puedan divergir.
+            string locationKey = _locationResolver.ResolveDefaultLocationKey(LocationUsage.Personal);
+
+            //Comprobar que cabe en el disco (espacio libre mínimo y tope de uso). No hay área temporal: solo 1 x tamaño.
+            await _capacityService.EnsureFitsAsync(locationKey, request.SizeBytes, cToken);
+
+            //Validar el tipo real del archivo con sus primeros bytes, antes de escribir nada en disco
+            if (!request.FileStream.CanSeek)
+                throw new InvalidOperationException("El stream de subida debe permitir seek para validar su cabecera.");
+
+            byte[] headerBytes = await FileHeader.ReadAsync(request.FileStream, cToken);
+            request.FileStream.Seek(0, SeekOrigin.Begin);
+
+            if (!_fileTypeValidator.IsValid(fileName, headerBytes))
+                throw new InvalidFileExtensionException(extension);
+
+            //Generar un nombre único para el archivo final a partir de un GUID y la extensión original
+            string storedName = Guid.NewGuid().ToString() + extension;
+
+            if (!_contentTypeResolver.TryGetContentType(fileName, out string? contentType))
+                contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
+
+            try
+            {
+                //Guardar el archivo en disco
+                long writtenBytes = await _fileStorageService.SaveAsync(request.FileStream, locationKey, storedName, cToken);
+
+                //Defensa en profundidad: lo escrito debe coincidir con lo declarado y respetar el límite
+                if (writtenBytes != request.SizeBytes || writtenBytes > singleUploadMaxBytes)
+                    throw new InvalidUploadRequestException($"El tamaño escrito ({writtenBytes} bytes) no coincide con el declarado ({request.SizeBytes} bytes) o supera el límite.");
+
+                //Crear el registro para la base de datos
+                FileItem fileItem = new FileItem
+                {
+                    FileName = fileName,
+                    StoredName = storedName,
+                    LocationKey = locationKey,
+                    SizeBytes = writtenBytes,
+                    ContentType = contentType!,
+                    FolderId = request.FolderId,
+                    OwnerId = ownerId,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                await _fileItemRepository.AddAsync(fileItem, cToken);
+                await _fileItemRepository.SaveChangesAsync(cToken);
+
+                //Registrar la acción de subida en el log de auditoría
+                await _auditService.LogAsync(AuditLogActions.UploadFile, nameof(FileItem), fileItem.Id, fileItem.FileName, cToken);
+
+                return new UploadFileResponseDto(fileItem.Id, fileItem.FileName, fileItem.SizeBytes,
+                    fileItem.ContentType, fileItem.FolderId, fileItem.OwnerId, fileItem.UploadedAt);
+            }
+            catch (Exception)
+            {
+                //Si algo falla, eliminar el archivo del disco para evitar huérfanos sin registro. Es best effort: si
+                //el disco ya no está disponible no hay nada que borrar, y debe propagarse el error original.
+                try
+                {
+                    if (_fileStorageService.Exists(locationKey, storedName))
+                        await _fileStorageService.DeleteAsync(locationKey, storedName, CancellationToken.None);
+                }
+                catch (StorageLocationUnavailableException)
+                {
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
@@ -412,10 +501,10 @@ namespace HomeDB.Application.Services
                     throw new InvalidFileExtensionException(extension);
 
                 //Leer los bytes iniciales del archivo ensamblado para validar el tipo real
-                byte[] headerBytes = new byte[16];
+                byte[] headerBytes;
                 await using (FileStream finalStream = new FileStream(assembledTempPath, FileMode.Open, FileAccess.Read))
                 {
-                    await finalStream.ReadAsync(headerBytes, cToken);
+                    headerBytes = await FileHeader.ReadAsync(finalStream, cToken);
                 }
 
                 //Validar que el contenido del archivo coincide con la extensión declarada
@@ -503,19 +592,6 @@ namespace HomeDB.Application.Services
         }
 
         /// <summary>
-        /// Mapea una excepción de ensamblado/validación al código de error que debe quedar en UploadSession.ErrorCode,
-        /// para que el cliente que hace polling a /status sepa por qué falló sin exponer el mensaje interno.
-        /// </summary>
-        private static ApiErrorCodes MapExceptionToErrorCode(Exception ex) => ex switch
-        {
-            AssembledFileSizeMismatchException => ApiErrorCodes.AssembledFileSizeMismatch,
-            InvalidFileExtensionException => ApiErrorCodes.InvalidFileExtension,
-            StorageLocationUnavailableException => ApiErrorCodes.StorageLocationUnavailable,
-            StorageLocationFullException => ApiErrorCodes.StorageLocationFull,
-            _ => ApiErrorCodes.InternalError
-        };
-
-        /// <summary>
         /// Elimina las sesiones de carga que han sido completadas o canceladas, junto con sus archivos temporales.
         /// </summary>
         public async Task CleanupFinishedSessionsAsync(CancellationToken cToken)
@@ -563,5 +639,74 @@ namespace HomeDB.Application.Services
             _uploadSessionRepository.RemoveRange(sessionsToRemove);
             await _uploadSessionRepository.SaveChangesAsync(cToken);
         }
+
+        #region Métodos privados
+
+        /// <summary>
+        /// Comprueba que el disco de la ubicación por defecto del uso indicado está disponible. Se usa antes de
+        /// tocar directamente el área temporal (que este servicio gestiona con System.IO) o antes de aceptar
+        /// trabajo que acabará escribiendo en ella.
+        /// </summary>
+        private void EnsureAvailableFor(LocationUsage usage, bool forWrite)
+        {
+            _availabilityService.EnsureAvailable(_locationResolver.ResolveDefaultDiskKey(usage), forWrite);
+        }
+
+        /// <summary>
+        /// Comprueba que la carpeta indicada existe y pertenece al usuario. Null (carpeta raíz) siempre es válido.
+        /// </summary>
+        private async Task EnsureFolderBelongsToUserAsync(int? folderId, int ownerId, CancellationToken cToken)
+        {
+            if (!folderId.HasValue)
+                return;
+
+            FolderItem? folder = await _folderRepository.GetByIdAsync(folderId.Value, cToken);
+            if (folder is null || folder.OwnerId != ownerId)
+                throw new ParentFolderNotFoundException(folderId.Value);
+        }
+
+        /// <summary>
+        /// Comprueba que añadir sizeBytes no supera la cuota de almacenamiento total del usuario (solo si tiene límite).
+        /// </summary>
+        private async Task EnsureWithinUserQuotaAsync(int ownerId, long sizeBytes, UserAdminSettings effectiveSettings, CancellationToken cToken)
+        {
+            if (!effectiveSettings.StorageLimitBytes.HasValue)
+                return;
+
+            (int _, long totalSizeBytes, int _) = await _fileItemRepository.GetUserStatsAsync(ownerId, cToken);
+            if (totalSizeBytes + sizeBytes > effectiveSettings.StorageLimitBytes.Value)
+                throw new StorageLimitExceededException(totalSizeBytes + sizeBytes, effectiveSettings.StorageLimitBytes.Value);
+        }
+
+        /// <summary>
+        /// Normaliza el nombre recibido del cliente: se queda con el último segmento de la ruta (con "/" o "\"),
+        /// y rechaza nombres vacíos, demasiado largos o con caracteres de control.
+        /// </summary>
+        private static string SanitizeFileName(string rawFileName)
+        {
+            string fileName = (rawFileName ?? string.Empty).Trim();
+            int lastSeparator = fileName.LastIndexOfAny(new[] { '/', '\\' });
+            if (lastSeparator >= 0)
+                fileName = fileName.Substring(lastSeparator + 1);
+
+            if (fileName.Length == 0 || fileName.Length > 255 || fileName.Any(char.IsControl))
+                throw new InvalidUploadRequestException("El nombre de archivo no es válido.");
+
+            return fileName;
+        }
+
+        /// <summary>
+        /// Mapea una excepción de ensamblado/validación al código de error que debe quedar en UploadSession.ErrorCode,
+        /// para que el cliente que hace polling a /status sepa por qué falló sin exponer el mensaje interno.
+        /// </summary>
+        private static ApiErrorCodes MapExceptionToErrorCode(Exception ex) => ex switch
+        {
+            AssembledFileSizeMismatchException => ApiErrorCodes.AssembledFileSizeMismatch,
+            InvalidFileExtensionException => ApiErrorCodes.InvalidFileExtension,
+            StorageLocationUnavailableException => ApiErrorCodes.StorageLocationUnavailable,
+            StorageLocationFullException => ApiErrorCodes.StorageLocationFull,
+            _ => ApiErrorCodes.InternalError
+        };
+        #endregion
     }
 }

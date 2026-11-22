@@ -118,6 +118,18 @@ namespace HomeDB.Tests.Infrastructure
             });
         }
 
+        //Cambia en caliente el máximo de la subida directa (Storage:SingleUploadMaxFileBytes). Al hacer Dispose del
+        //valor devuelto se restaura el anterior, así que el uso correcto es con "using".
+        public IDisposable LimitSingleUpload(long maxFileBytes)
+        {
+            StorageOptions storageOptions = Services.GetRequiredService<IOptions<StorageOptions>>().Value;
+            long previousMaxFileBytes = storageOptions.SingleUploadMaxFileBytes;
+
+            storageOptions.SingleUploadMaxFileBytes = maxFileBytes;
+
+            return new StorageLimitsRestorer(() => storageOptions.SingleUploadMaxFileBytes = previousMaxFileBytes);
+        }
+
         private sealed class StorageLimitsRestorer : IDisposable
         {
             private readonly Action _restore;
