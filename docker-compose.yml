@@ -17,9 +17,32 @@ services:
       - AllowedHosts=${ALLOWED_HOSTS}
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN}
     volumes:
-      - ./storage:/storage/files
-      - ./logs:/storage/logs
-      - ${BACKUP_HOST_PATH}:/storage/backups
+      # Datos en el M.2, fuera del repo. Crear antes: sudo mkdir -p /srv/homedb/storage /srv/homedb/logs
+      # create_host_path: false evita que Docker cree las carpetas por su cuenta (con propietario root).
+      - type: bind
+        source: /srv/homedb/storage
+        target: /storage
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /srv/homedb/logs
+        target: /logs
+        bind:
+          create_host_path: false
+      # Discos del DAS. Los puntos de montaje del host deben existir ya montados (fstab con nofail).
+      # create_host_path: false evita que Docker cree una carpeta vacía en el M.2 si el disco no está montado.
+      - type: bind
+        source: /mnt/hdd1
+        target: /das/hdd1
+        bind:
+          create_host_path: false
+          propagation: rslave
+      - type: bind
+        source: /mnt/hdd2
+        target: /das/hdd2
+        bind:
+          create_host_path: false
+          propagation: rslave
     depends_on:
       db:
         condition: service_healthy

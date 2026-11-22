@@ -91,12 +91,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 
+// --------------------------- Política de arranque de los discos --------------------------- //
+//Antes de migrar: si falta un disco Required, la API no arranca y no se toca la base de datos.
+await app.ValidateStorageDisksAsync();
+
 // --------------------------- Migraciones automáticas --------------------------- //
 using (IServiceScope scope = app.Services.CreateScope())
 {
     AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+
+// --------------------------- Validación de claves de ubicación --------------------------- //
+//Después de migrar: lee FileItems, que ya debe tener la columna LocationKey.
+app.ValidateStoredLocationKeys();
 
 // --------------------------- Health Checks --------------------------- //
 //Sirve el index.html al entrar al dominio.

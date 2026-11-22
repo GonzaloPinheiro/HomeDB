@@ -9,11 +9,11 @@ Sin MediatR, FluentValidation, AutoMapper ni Serilog.
   - Entidades: `User`, `FileItem`, `FolderItem`, `RefreshToken`, `AuditLogEntry`, `Role`, `UserRole`, `LogEntry`
   - Interfaces repositorio: `IUserRepository`, `IFileItemRepository`, `IFolderRepository`, `IRefreshTokenRepository`, `IAuditLogRepository`, `ILogEntryRepository`
 - **`HomeDB.Application`** (`HomeDB.Application.*`) — `Services/`, `DTOs/`, `Options/`
-  - Servicios: `AuthService`, `FilesService`, `FoldersService`, `AuditService`, `StatisticsService`, `LogsService`
+  - Servicios: `AuthService`, `FilesService`, `FoldersService`, `AuditService`, `StatisticsService`, `LogsService`, `StorageStatusService`, `StorageCapacityService`
 - **`HomeDB.Infrastructure`** (`HomeDB.Infrastructure.*`) — `Data/`, `Repositories/`, `Migrations/`, `Security/`, `Storage/`, `Observability/`
   - Repos: `UserRepository`, `FileItemRepository`, `FolderRepository`, `AuditLogEntryRepository`, `RefreshTokenRepository`, `LogEntryRepository`¹
 - **`HomeDB`** (`HomeDB.*`) — `Controllers/`, `Middlewares/`, `Authorization/`, `DependencyInjection/`, `Common/`, `Program.cs`
-  - Controllers: `AuthController`, `FilesController`, `FoldersController`, `AdminController`, `StatisticsController`, `HealthController`
+  - Controllers: `AuthController`, `FilesController`, `FoldersController`, `AdminController`, `StatisticsController`, `StorageController`, `HealthController`
 
 ¹ `LogEntryRepository` usa `IDbContextFactory<AppDbContext>` (no `AppDbContext` directo) porque vive en un background service.
 
@@ -24,7 +24,7 @@ Sin MediatR, FluentValidation, AutoMapper ni Serilog.
 ApiObjResponse<T>.Success(data)
 ApiObjResponse<T>.Failure(ApiErrorCodes.UserNotFound, "mensaje")
 ```
-`ApiErrorCodes` es enum: `FileNotFound=1001`, `FolderNotFound=1002`, `Unauthorized=1003`, `FileTooLarge=1004`, `FolderNotEmpty=1005`, `InvalidCredentials=1006`, `UserAlreadyExists=1007`, `UserNotFound=1008`, `RateLimitExceeded=1009`, `InternalError=9999`.
+`ApiErrorCodes` es enum: `FileNotFound=1001`, `FolderNotFound=1002`, `Unauthorized=1003`, `FileTooLarge=1004`, `FolderNotEmpty=1005`, `InvalidCredentials=1006`, `UserAlreadyExists=1007`, `UserNotFound=1008`, `RateLimitExceeded=1009`, `StorageLocationUnavailable=1028`, `StorageLocationFull=1029`, `InternalError=9999`.
 
 ## Roles
 
@@ -42,6 +42,18 @@ Consecuencias de esta regla:
 - Autorización basada en módulos (`RequireModuleAttribute`, `ModuleAuthorizationHandler`, `ModuleRequirement`) vive en `HomeDB/Authorization/` (capa web), no en Application. La regla de negocio ("¿tiene el usuario este módulo habilitado?") vive en `UserModulePermissionsService.HasAccessAsync()`.
 - Cualquier traducción a un tipo de framework (p. ej. `SameSitePolicy` de dominio → `SameSiteMode` de ASP.NET Core) se hace en un extension method de `HomeDB/Common/`, nunca dentro de Application.
 - Si un caso de uso necesita algo que solo ofrece un paquete de framework (tipo de contenido por extensión, cadena de conexión, etc.), Application define la interfaz en `HomeDB.Domain.Interfaces.Services` y `HomeDB.Infrastructure` la implementa (p. ej. `IContentTypeResolver`).
+
+## Almacenamiento multi-ubicación
+
+Config `Storage:Disks[]`: cada disco (`Key`, `Path`, `StartupPolicy` Required/Optional, `MinFreeBytes`) tiene `Locations[]` (`Key`, `Usage`, `IsDefault`, `SubPath`, `IncludeInBackup`, `MaxUsedBytes`). Cada `FileItem` guarda su `LocationKey`. Guía de despliegue en `docs/despliegue-almacenamiento.md`.
+- Cada disco lleva en su raíz un fichero `.homedb-location` cuyo contenido es la **clave del disco**. Sin él el disco no está disponible: las operaciones dan 503 con `StorageLocationUnavailable` (`StorageLocationUnavailableException`).
+- Todo acceso a ficheros pasa por `IFileStorageService`, que llama a `IStorageAvailabilityService.EnsureAvailable` antes de leer, escribir o borrar. **Nunca `Directory.CreateDirectory` ni escrituras en una ubicación antes de esa comprobación**: con el disco ausente crearían la carpeta en el disco principal.
+- Para rutas usar `IStorageLocationResolver` (por uso por defecto o por clave de ubicación), nunca rutas literales.
+- Arranque: `ValidateStorageDisksAsync()` (antes de migrar) y `ValidateStoredLocationKeys()` (después), en `HomeDB/DependencyInjection/StorageStartupExtensions.cs`. En ejecución, `StorageAvailabilityBackgroundService` vigila los discos.
+- Backups: el origen son las ubicaciones con `IncludeInBackup` (un `rsync` por ubicación hacia `backup_actual/<clave>`) y el destino la ubicación por defecto de uso `Backups` + `daily`. `BackupService` comprueba todos los discos implicados antes de tocar nada. Una ubicación de uso `Backups` no puede tener `IncludeInBackup`.
+- Límites de espacio: quien escribe en una ubicación llama a `StorageCapacityService.EnsureFitsAsync(clave, bytes, cToken)` (o `EnsureUploadFitsAsync` en subidas) antes de aceptar el trabajo; lanza `StorageLocationFullException` (507, `StorageLocationFull`). `MinFreeBytes` es del disco y `MaxUsedBytes` de la ubicación, y este solo se admite en ubicaciones `Personal` (se mide con `FileItems`). Los futuros torrents deben usar el mismo servicio.
+- `GET api/storage/locations` (módulo `SystemMonitor`) expone el estado; el monitor de sistema sigue leyendo `/` (disco principal de la Pi).
+- En tests de integración un disco debe tener su marcador (ver `HomeDbApiFactory`); `SimulateDiskUnavailable()` lo borra y lo restaura al hacer `Dispose`.
 
 ## IDs
 

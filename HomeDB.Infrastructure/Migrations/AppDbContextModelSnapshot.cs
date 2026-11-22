@@ -145,6 +145,11 @@ namespace HomeDB.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("folder_id");
 
+                    b.Property<string>("LocationKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("location_key");
+
                     b.Property<int>("OwnerId")
                         .HasColumnType("integer")
                         .HasColumnName("owner_id");

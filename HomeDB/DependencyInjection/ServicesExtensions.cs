@@ -41,6 +41,11 @@ namespace HomeDB.DependencyInjection
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
             services.AddScoped<IFileStorageService, FileStorageService>();
+            services.AddSingleton<IStorageLocationResolver, StorageLocationResolver>();
+            services.AddSingleton<IStorageAvailabilityService, StorageAvailabilityService>();
+            services.AddSingleton<StorageStartupValidator>();
+            services.AddSingleton<StorageAvailabilityMonitor>();
+            services.AddHostedService<StorageAvailabilityBackgroundService>(); //Background service
             services.AddSingleton<IFileTypeValidator, MimeDetectiveFileTypeValidator>();
             services.AddSingleton<IContentTypeResolver, ContentTypeResolver>();
 
@@ -58,6 +63,8 @@ namespace HomeDB.DependencyInjection
             services.AddScoped<FoldersService>();
             services.AddScoped<AuditService>();
             services.AddScoped<StatisticsService>();
+            services.AddScoped<StorageStatusService>();
+            services.AddScoped<StorageCapacityService>();
             services.AddScoped<UsersService>();
             services.AddScoped<RolesService>();
             services.AddScoped<UserModulePermissionsService>();

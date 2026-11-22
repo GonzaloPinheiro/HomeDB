@@ -12,3 +12,6 @@
 
 Add-Migration AgregarSystemMetrics -Project HomeDB.Infrastructure -StartupProject HomeDB
 Update-Database -Project HomeDB.Infrastructure -StartupProject HomeDB
+
+Antes del primer docker compose up en la Pi
+sudo mkdir -p /srv/homedb/storage /srv/homedb/logs

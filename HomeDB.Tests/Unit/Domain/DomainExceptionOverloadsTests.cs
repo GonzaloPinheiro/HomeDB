@@ -1,3 +1,4 @@
+using HomeDB.Domain.Common;
 using HomeDB.Domain.Exceptions;
 
 namespace HomeDB.Tests.Unit.Domain
@@ -57,6 +58,39 @@ namespace HomeDB.Tests.Unit.Domain
             Assert.Equal(
                 $"Upload session {sessionId} is incomplete. Received 2 of 5 chunks.",
                 exception.Message);
+        }
+
+        [Fact]
+        public void StorageLocationUnavailableException_MentionsDiskAndReason_AndExposesThem()
+        {
+            StorageLocationUnavailableException exception = new StorageLocationUnavailableException("hdd1", "marker file is missing");
+
+            Assert.Equal("Storage disk 'hdd1' is not available: marker file is missing.", exception.Message);
+            Assert.Equal("hdd1", exception.DiskKey);
+            Assert.Equal("marker file is missing", exception.Reason);
+        }
+
+        [Fact]
+        public void StorageLocationFullException_MentionsLocationAndReason_AndExposesThem()
+        {
+            StorageLocationFullException exception = new StorageLocationFullException("main", "not enough free space");
+
+            Assert.Equal("Storage location 'main' cannot hold this file: not enough free space.", exception.Message);
+            Assert.Equal("main", exception.LocationKey);
+            Assert.Equal("not enough free space", exception.Reason);
+        }
+
+        [Fact]
+        public void StorageLocationFull_ErrorCode_FollowsStorageLocationUnavailable()
+        {
+            Assert.Equal(1029, (int)ApiErrorCodes.StorageLocationFull);
+        }
+
+        [Fact]
+        public void StorageLocationUnavailable_ErrorCode_FollowsLastUsedCode()
+        {
+            //1027 es InvalidFileExtension, el último código libre antes de este
+            Assert.Equal(1028, (int)ApiErrorCodes.StorageLocationUnavailable);
         }
     }
 }

@@ -29,13 +29,17 @@ namespace HomeDB.Application.Services
         private readonly UserAdminSettingsService _userAdminSettingsService;
         private readonly IUploadCompletionQueue _completionQueue;
         private readonly StorageOptions _storageOptions;
+        private readonly IStorageLocationResolver _locationResolver;
+        private readonly IStorageAvailabilityService _availabilityService;
+        private readonly StorageCapacityService _capacityService;
 
         //Constructores
         public UploadService(IUploadSessionRepository uploadSessionRepository, IFolderRepository folderRepository,
                              IFileItemRepository fileItemRepository, IUploadChunkLockProvider lockProvider, IUploadChunkRepository uploadChunkRepository,
                              IFileStorageService fileStorageService, IFileTypeValidator fileTypeValidator, IContentTypeResolver contentTypeResolver,
                              AuditService auditService, UserAdminSettingsService userAdminSettingsService, IUploadCompletionQueue completionQueue,
-                             IOptions<StorageOptions> storageOptions)
+                             IOptions<StorageOptions> storageOptions, IStorageLocationResolver locationResolver,
+                             IStorageAvailabilityService availabilityService, StorageCapacityService capacityService)
         {
             _uploadSessionRepository = uploadSessionRepository;
             _folderRepository = folderRepository;
@@ -49,6 +53,19 @@ namespace HomeDB.Application.Services
             _userAdminSettingsService = userAdminSettingsService;
             _completionQueue = completionQueue;
             _storageOptions = storageOptions.Value;
+            _locationResolver = locationResolver;
+            _availabilityService = availabilityService;
+            _capacityService = capacityService;
+        }
+
+        /// <summary>
+        /// Comprueba que el disco de la ubicación por defecto del uso indicado está disponible. Se usa antes de
+        /// tocar directamente el área temporal (que este servicio gestiona con System.IO) o antes de aceptar
+        /// trabajo que acabará escribiendo en ella.
+        /// </summary>
+        private void EnsureAvailableFor(LocationUsage usage, bool forWrite)
+        {
+            _availabilityService.EnsureAvailable(_locationResolver.ResolveDefaultDiskKey(usage), forWrite);
         }
 
         /// <summary>
@@ -63,6 +80,11 @@ namespace HomeDB.Application.Services
             //Comprobar que el tamaño total del archivo sea válido
             if (request.TotalSizeBytes <= 0)
                 throw new InvalidUploadRequestException($"TotalSizeBytes debe ser mayor que 0. Valor recibido: {request.TotalSizeBytes}.");
+
+            //Fallar rápido si los discos que usará la subida no están disponibles, antes de que el cliente
+            //envíe el archivo entero: el temporal para los chunks y el personal para el archivo final.
+            EnsureAvailableFor(LocationUsage.Temp, forWrite: true);
+            EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
 
             //Comprobar si la carpeta padre existe y pertenece al usuario
             if (request.FolderId.HasValue)
@@ -88,6 +110,9 @@ namespace HomeDB.Application.Services
                 if (totalSizeBytes + request.TotalSizeBytes > effectiveSettings.StorageLimitBytes.Value)
                     throw new StorageLimitExceededException(totalSizeBytes + request.TotalSizeBytes, effectiveSettings.StorageLimitBytes.Value);
             }
+
+            //Comprobar que el archivo cabe en los discos (espacio libre mínimo y tope de uso), antes de que el cliente lo envíe
+            await _capacityService.EnsureUploadFitsAsync(request.TotalSizeBytes, atCompletion: false, cToken);
 
             //Crear una nueva sesión de carga
             UploadSession session = new UploadSession
@@ -142,7 +167,7 @@ namespace HomeDB.Application.Services
             await chunkLock.WaitAsync(cToken);
 
             //Obtener la ruta de la carpeta temporal para almacenar los chunks de la sesión
-            string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+            string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
             //Crear la ruta completa del archivo temporal para el chunk específico
             string chunkPath = Path.Combine(sessionFolderPath, $"chunk_{request.ChunkNumber}");
@@ -155,11 +180,9 @@ namespace HomeDB.Application.Services
                 //Comprobar si el chunk ya fue recibido previamente para evitar duplicados
                 bool alreadyReceived = await _uploadChunkRepository.ExistsAsync(session.Id, request.ChunkNumber, cToken);
 
-                //Crear la carpeta temporal para almacenar los chunks de la sesión si no existe
-                Directory.CreateDirectory(sessionFolderPath);
-
-                //Guardar el chunk en un archivo temporal en el servidor
-                await _fileStorageService.SaveAsync(request.ChunkStream, chunkTempPath, cToken);
+                //Guardar el chunk en un archivo temporal en el servidor. SaveTempAsync comprueba antes que el disco
+                //del área temporal está disponible y crea la carpeta de la sesión si no existe.
+                await _fileStorageService.SaveTempAsync(request.ChunkStream, chunkTempPath, cToken);
 
                 //Leer el tamaño del archivo escrito
                 long writtenBytes = new FileInfo(chunkTempPath).Length;
@@ -340,7 +363,7 @@ namespace HomeDB.Application.Services
                 throw new UploadSessionNotFoundException(sessionId.ToString());
 
             //Crear la ruta de la carpeta temporal para almacenar los chunks de la sesión
-            string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+            string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
             //Crear la ruta completa del archivo ensamblado temporal
             string assembledTempPath = Path.Combine(sessionFolderPath, "assembled.tmp");
@@ -350,6 +373,15 @@ namespace HomeDB.Application.Services
 
             try
             {
+                //Comprobar antes de empezar que los dos discos implicados están disponibles. Si no, la sesión se
+                //cancela con un código de error claro en vez de quedarse en Processing sin que nadie la retome.
+                EnsureAvailableFor(LocationUsage.Temp, forWrite: true);
+                EnsureAvailableFor(LocationUsage.Personal, forWrite: true);
+
+                //Volver a comprobar que cabe: otras subidas pueden haber ocupado el espacio desde que se inició esta.
+                //Si no cabe, la sesión se cancela con el código StorageLocationFull.
+                await _capacityService.EnsureUploadFitsAsync(session.TotalSizeBytes, atCompletion: true, cToken);
+
                 //Concatenar los chunks en orden numérico hacia un único archivo temporal
                 await using (FileStream outputStream = new FileStream(assembledTempPath, FileMode.Create, FileAccess.Write))
                 {
@@ -411,13 +443,17 @@ namespace HomeDB.Application.Services
             //Generar un nombre único para el archivo final a partir de un GUID y la extensión original del archivo
             string storedName = Guid.NewGuid().ToString() + extension;
 
+            //Ubicación final del archivo: se calcula una sola vez para que el guardado físico y el registro en
+            //base de datos no puedan divergir.
+            string locationKey = _locationResolver.ResolveDefaultLocationKey(LocationUsage.Personal);
+
             //Objeto a insertar en base de datos
             FileItem fileItem;
 
             try
             {
                 //Mover el archivo ya ensamblado a su ubicación final, sin volver a copiarlo entero.
-                await _fileStorageService.SaveFromPathAsync(assembledTempPath, storedName, cToken);
+                await _fileStorageService.SaveFromPathAsync(assembledTempPath, locationKey, storedName, cToken);
 
                 if (!_contentTypeResolver.TryGetContentType(session.FileName, out string? contentType))
                     contentType = "application/octet-stream"; // fallback si la extensión no está en su diccionario interno
@@ -427,6 +463,7 @@ namespace HomeDB.Application.Services
                 {
                     FileName = session.FileName,
                     StoredName = storedName,
+                    LocationKey = locationKey,
                     SizeBytes = assembledSizeBytes,
                     ContentType = contentType!,
                     FolderId = session.FolderId,
@@ -444,8 +481,8 @@ namespace HomeDB.Application.Services
                 //Si algo falla antes de comprometer el FileItem en la base de datos, eliminar el archivo final para evitar huérfanos.
                 //Nota: la sesión sigue en Processing en la base de datos, así que no se liberan los locks:
                 //el cliente puede reintentar el complete con los mismos chunks.
-                if (_fileStorageService.Exists(storedName))
-                    await _fileStorageService.DeleteAsync(storedName, CancellationToken.None);
+                if (_fileStorageService.Exists(locationKey, storedName))
+                    await _fileStorageService.DeleteAsync(locationKey, storedName, CancellationToken.None);
                 throw;
             }
 
@@ -473,6 +510,8 @@ namespace HomeDB.Application.Services
         {
             AssembledFileSizeMismatchException => ApiErrorCodes.AssembledFileSizeMismatch,
             InvalidFileExtensionException => ApiErrorCodes.InvalidFileExtension,
+            StorageLocationUnavailableException => ApiErrorCodes.StorageLocationUnavailable,
+            StorageLocationFullException => ApiErrorCodes.StorageLocationFull,
             _ => ApiErrorCodes.InternalError
         };
 
@@ -488,6 +527,11 @@ namespace HomeDB.Application.Services
             if (finishedSessions.Count == 0)
                 return;
 
+            //Si el disco del área temporal no está disponible, sus carpetas parecerían "ya borradas" y se eliminarían
+            //los registros de sesión mientras los chunks siguen en el disco. Se salta la limpieza: lanza la
+            //excepción, que el servicio de limpieza registra, y se reintenta en la siguiente ejecución.
+            EnsureAvailableFor(LocationUsage.Temp, forWrite: true);
+
             //Lista para almacenar las sesiones que se eliminarán de la base de datos
             List<UploadSession> sessionsToRemove = new List<UploadSession>();
 
@@ -495,7 +539,7 @@ namespace HomeDB.Application.Services
             foreach (UploadSession session in finishedSessions)
             {
                 //Crear la ruta de la carpeta temporal para la sesión específica
-                string sessionFolderPath = Path.Combine(_storageOptions.TempUploadsPath, session.SessionId.ToString());
+                string sessionFolderPath = Path.Combine(_locationResolver.ResolveDefaultBasePath(LocationUsage.Temp), session.SessionId.ToString());
 
                 //Red de seguridad: la sesión ya está en estado terminal, así que sus locks ya no deberían usarse.
                 _lockProvider.ReleaseSessionLocks(session.SessionId);

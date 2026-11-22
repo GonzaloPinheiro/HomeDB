@@ -294,6 +294,22 @@ namespace HomeDB.Middlewares
                     ),
                     //
 
+                    StorageLocationUnavailableException slue => (
+                        StatusCodes.Status503ServiceUnavailable,
+                        slue.Message,
+                        ApiErrorCodes.StorageLocationUnavailable,
+                        LogLevel.Warning,
+                        $"Disco de almacenamiento no disponible. Disk: {slue.DiskKey}, Reason: {slue.Reason}, Path: {path}, Method: {method}"
+                    ),
+                    StorageLocationFullException slfe => (
+                        StatusCodes.Status507InsufficientStorage,
+                        slfe.Message,
+                        ApiErrorCodes.StorageLocationFull,
+                        LogLevel.Warning,
+                        $"Ubicación de almacenamiento sin espacio suficiente. Location: {slfe.LocationKey}, Reason: {slfe.Reason}, Path: {path}, Method: {method}"
+                    ),
+                    //
+
                     ArgumentNullException ane => (
                         StatusCodes.Status400BadRequest,
                         "Parámetro requerido no proporcionado",

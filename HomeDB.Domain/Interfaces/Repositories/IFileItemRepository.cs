@@ -33,6 +33,11 @@ namespace HomeDB.Domain.Interfaces.Repositories
         Task<(int TotalFiles, long TotalSizeBytes, int TotalFolders)> GetUserStatsAsync(int ownerId, CancellationToken cToken);
 
         /// <summary>
+        /// Retorna la suma en bytes de los archivos registrados en la ubicación indicada (de todos los usuarios).
+        /// </summary>
+        Task<long> GetUsedBytesByLocationAsync(string locationKey, CancellationToken cToken);
+
+        /// <summary>
         /// Elimina el fileItem recibido como parámetro de la base de datos
         /// </summary>
         void DeleteFile(FileItem fileItem);
